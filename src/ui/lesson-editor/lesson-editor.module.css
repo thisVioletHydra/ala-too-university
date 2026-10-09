@@ -1,0 +1,102 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgb(27 36 48 / 28%);
+}
+
+.dialog {
+  display: grid;
+  gap: 0.75rem;
+  inline-size: min(24rem, 100%);
+  padding: 1rem;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: var(--shadow);
+}
+
+.dialog h2 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.code {
+  margin: 0;
+  color: var(--ink);
+  font-size: 0.875rem;
+  font-weight: 650;
+}
+
+.field {
+  display: grid;
+  gap: 0.35rem;
+  color: var(--ink);
+  font-size: 1rem;
+  font-weight: 650;
+}
+
+.field select {
+  min-block-size: 44px;
+  padding: 0.55rem 0.65rem;
+  font-size: 1rem;
+  font-weight: 450;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--ink);
+
+  &:hover {
+    border-color: #c9d3e0;
+  }
+}
+
+.reason {
+  margin: 0;
+  color: var(--bad);
+  font-size: 1rem;
+  font-weight: 650;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.ghost,
+.save {
+  min-block-size: 44px;
+  padding: 0.5rem 0.9rem;
+  border-radius: 10px;
+  font-size: 1rem;
+
+  &:active {
+    transform: scale(0.98);
+  }
+}
+
+.ghost {
+  border: 1px solid var(--line);
+  background: #fff;
+
+  &:hover {
+    border-color: #c9d3e0;
+  }
+}
+
+.save {
+  border: 0;
+  background: var(--ink);
+  color: #fff;
+
+  &:hover {
+    background: #2c3a4d;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    background: #c5ced8;
+  }
+}

@@ -1,0 +1,116 @@
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-inline-size: 0;
+  min-block-size: 0;
+  block-size: 100%;
+  max-inline-size: 36rem;
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+  box-shadow: var(--shadow);
+}
+
+.title {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.find {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.searchLabel {
+  color: var(--ink);
+  font-size: 1rem;
+  font-weight: 650;
+}
+
+.search {
+  inline-size: 100%;
+  min-block-size: 44px;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #f8fafc;
+  color: var(--ink);
+  font-size: 1rem;
+
+  &:hover {
+    border-color: #c9d3e0;
+  }
+}
+
+.status {
+  margin: 0;
+  padding-block-start: 0.15rem;
+  border-block-start: 1px solid var(--line);
+  color: var(--ink);
+  font-size: 1rem;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
+.tray {
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-block-size: 0;
+  border-radius: 10px;
+  background: #e6ebf2;
+  outline: 2px dashed transparent;
+  outline-offset: -2px;
+  transition: background 180ms ease, outline-color 180ms ease;
+
+  &[data-over='yes'] {
+    background: var(--ok-soft);
+    outline-color: var(--ring);
+  }
+
+  &[data-over='yes'] :global([data-section-id]) {
+    opacity: 0.38;
+  }
+}
+
+.hint {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  padding: 0.75rem;
+  pointer-events: none;
+  color: var(--ink);
+  font-size: 1.05rem;
+  font-weight: 650;
+  text-align: center;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  flex: 1;
+  min-block-size: 0;
+  padding: 0.45rem;
+  overflow: scroll;
+  scrollbar-gutter: stable;
+  border-radius: inherit;
+}
+
+.empty {
+  display: flex;
+  align-items: start;
+  margin: 0;
+  min-block-size: 9rem;
+  padding: 0.75rem 0.8rem;
+  border-radius: 6px;
+  background: #f1f4f8;
+  color: var(--ink);
+  font-size: 1rem;
+}
+

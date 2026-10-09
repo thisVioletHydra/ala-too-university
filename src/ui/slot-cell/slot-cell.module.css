@@ -1,0 +1,69 @@
+.cell {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-block-size: 4.6rem;
+  padding: 0.3rem;
+  border-block-end: 1px solid var(--line);
+  border-inline-end: 1px solid var(--line);
+  background: #fff;
+
+  &[data-tone='ok'] {
+    background: var(--ok-soft);
+  }
+
+  &[data-tone='bad'] {
+    background: var(--bad-soft);
+  }
+
+  &[data-over='yes'] {
+    z-index: 4;
+    outline: 2px dashed var(--ring);
+    outline-offset: -2px;
+  }
+
+  &[data-aim='yes']:not([data-over='yes']) {
+    outline: 2px dashed var(--ring);
+    outline-offset: -2px;
+  }
+}
+
+.tip {
+  position: fixed;
+  z-index: 1000;
+  display: flex;
+  gap: 0.45rem;
+  align-items: flex-start;
+  inline-size: max-content;
+  max-inline-size: 18rem;
+  margin: 0;
+  padding: 0.45rem 0.6rem;
+  border-radius: 6px;
+  background: #fff;
+  color: var(--ink);
+  box-shadow: 0 8px 20px rgb(44 49 64 / 12%);
+  font-size: 0.875rem;
+  font-weight: 650;
+  line-height: 1.35;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.bang {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  inline-size: 1.15rem;
+  block-size: 1.15rem;
+  margin-block-start: 0.08rem;
+  border-radius: 999px;
+  background: var(--bad);
+  color: #fff;
+  font-size: 0.8rem;
+  line-height: 1;
+}
+
+.tipText {
+  min-inline-size: 0;
+}

@@ -1,0 +1,163 @@
+@layer reset, base;
+
+@layer reset {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  body {
+    margin: 0;
+  }
+
+  button,
+  input,
+  select {
+    font: inherit;
+  }
+
+  button {
+    cursor: pointer;
+  }
+}
+
+body[data-hand='yes'] {
+  cursor: grabbing;
+}
+
+@layer base {
+  body {
+    min-block-size: 100vh;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: ui-sans-serif, system-ui, sans-serif;
+  }
+
+  :focus-visible {
+    outline: 3px solid var(--focus);
+    outline-offset: 2px;
+  }
+
+  .shell {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: 0.8rem;
+    block-size: 100vh;
+    padding: 1rem;
+    overflow: hidden;
+  }
+
+  .top {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 0.8rem;
+    align-items: center;
+
+    > div:first-child {
+      flex: 1 1 16rem;
+      min-inline-size: 0;
+    }
+  }
+
+  .top h1 {
+    margin: 0;
+    font-size: 1.35rem;
+  }
+
+  .hint {
+    margin: 0.2rem 0 0;
+    color: var(--ink);
+    font-size: 1rem;
+  }
+
+  .actions {
+    display: flex;
+    flex: 0 0 auto;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    align-items: center;
+  }
+
+  .dataset {
+    min-block-size: 44px;
+    padding: 0.5rem 0.85rem;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: #fff;
+    font-size: 1rem;
+
+    &:hover {
+      border-color: #c9d3e0;
+    }
+
+    &:active {
+      transform: scale(0.98);
+    }
+
+    &[aria-pressed='true'] {
+      border-color: var(--ink);
+      background: var(--ink);
+      color: #fff;
+    }
+  }
+
+  .workspace {
+    display: grid;
+    grid-template-columns: minmax(16rem, max-content) minmax(0, 1fr);
+    gap: 1rem;
+    align-items: stretch;
+    min-block-size: 0;
+  }
+
+  .board {
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+    min-inline-size: 0;
+    min-block-size: 0;
+  }
+
+}
+
+html {
+  overflow-x: hidden;
+  overflow-y: scroll;
+  scrollbar-gutter: stable;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #b7becb transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background-color: #b7becb;
+  background-clip: content-box;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background-color: #8e97a8;
+}
+
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}

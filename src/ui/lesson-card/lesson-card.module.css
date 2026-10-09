@@ -1,0 +1,130 @@
+.card {
+  display: grid;
+  gap: 0.2rem;
+  inline-size: 100%;
+  min-inline-size: 0;
+  padding: 0.5rem 0.55rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #fff;
+  color: inherit;
+  text-align: start;
+  cursor: grab;
+  outline: 1.5px solid transparent;
+  outline-offset: 0;
+  box-shadow: 0 0 0 0 transparent;
+  transition: outline-color 180ms ease, box-shadow 180ms ease;
+
+  &:focus-visible {
+    outline: 2px dashed var(--ring);
+    outline-offset: 2px;
+  }
+
+  &[data-flash='yes'] {
+    animation: confirm 200ms ease;
+  }
+
+  &:active {
+    transform: scale(0.98);
+  }
+
+  &[data-highlighted='yes'] {
+    box-shadow: inset 0 0 0 2px var(--accent);
+  }
+
+  &[data-overlay='yes'] {
+    box-shadow: var(--lift);
+    cursor: grabbing;
+  }
+
+  &:hover,
+  &[data-held='yes'] {
+    outline-color: var(--ring);
+    box-shadow: 0 0 0 3px var(--ring-halo);
+  }
+
+  :global(body[data-hand='yes']) &:hover:not([data-held='yes']),
+  :global(body[data-drag='yes']) &:hover:not([data-held='yes']),
+  :global(body[data-hand='yes']) &:active:not([data-held='yes']),
+  :global(body[data-drag='yes']) &:active:not([data-held='yes']) {
+    outline-color: transparent;
+    box-shadow: 0 0 0 0 transparent;
+    transform: none;
+    cursor: grabbing;
+  }
+
+  :global(body[data-hand='yes']) &[data-highlighted='yes']:hover:not([data-held='yes']),
+  :global(body[data-drag='yes']) &[data-highlighted='yes']:hover:not([data-held='yes']) {
+    box-shadow: inset 0 0 0 2px var(--accent);
+  }
+}
+
+.top {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.no {
+  color: var(--ink);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.tag {
+  justify-self: start;
+  padding: 0.12rem 0.5rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--stripe, var(--muted)) 28%, #fff);
+  color: var(--stripe, var(--ink));
+  font-size: 0.875rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.name {
+  min-inline-size: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.who,
+.room {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: var(--ink);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.room[data-warn='yes'] {
+  color: var(--warn);
+}
+
+.warn {
+  position: relative;
+  display: inline-flex;
+  flex: 0 0 auto;
+  color: var(--warn);
+
+  svg {
+    display: block;
+    inline-size: 16px;
+    block-size: 16px;
+  }
+}
+
+.sr {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+
+@keyframes confirm {
+  from { background-color: #fde68a; }
+  to { background-color: #fff; }
+}

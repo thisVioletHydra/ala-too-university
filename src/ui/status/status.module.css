@@ -1,0 +1,23 @@
+.screen {
+  display: grid;
+  place-items: center;
+  gap: 0.8rem;
+  min-block-size: 100vh;
+  color: var(--muted);
+}
+
+.screen button {
+  padding: 0.5rem 0.8rem;
+  border: 0;
+  border-radius: 10px;
+  background: var(--ink);
+  color: #fff;
+
+  &:hover {
+    background: #2c3a4d;
+  }
+
+  &:active {
+    transform: scale(0.98);
+  }
+}

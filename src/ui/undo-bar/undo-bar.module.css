@@ -1,0 +1,33 @@
+.bar {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.bar button {
+  min-block-size: 44px;
+  padding: 0.5rem 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  font-size: 1rem;
+  font-weight: 650;
+
+  &:not(:disabled) {
+    border-color: var(--ink);
+    background: var(--ink);
+    color: #fff;
+  }
+
+  &:hover:not(:disabled) {
+    background: #243044;
+  }
+
+  &:active:not(:disabled) {
+    transform: scale(0.98);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    color: var(--muted);
+  }
+}

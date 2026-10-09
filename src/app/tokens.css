@@ -1,0 +1,30 @@
+:root {
+  --bg: #f4f5f8;
+  --panel: #fff;
+  --ink: #2c3140;
+  --muted: #4a5160;
+  --focus: #1e3a5f;
+  --warn: #9a3412;
+  --line: #e6e8f0;
+  --accent: #6f6c86;
+  --ok: #1f9d55;
+  --ok-soft: #e8f7ee;
+  --bad: #e23b3b;
+  --bad-soft: #fdecec;
+  --shadow: 0 10px 28px rgb(44 49 64 / 6%);
+  --lift: 0 18px 36px rgb(44 49 64 / 16%);
+  --ring: rgb(59 130 246 / 85%);
+  --ring-halo: rgb(59 130 246 / 30%);
+  --radius: 16px;
+  color-scheme: light;
+}
+
+[data-course='C_CS101'] { --stripe: #1d4ed8; }
+[data-course='C_CS205'] { --stripe: #0f766e; }
+[data-course='C_DB202'] { --stripe: #b45309; }
+[data-course='C_MATH201'] { --stripe: #6d28d9; }
+[data-course='C_MATH101'] { --stripe: #be185d; }
+[data-course='C_ENG110'] { --stripe: #0e7490; }
+[data-course='C_PHY150'] { --stripe: #c2410c; }
+[data-course='C_HIS120'] { --stripe: #3f6212; }
+[data-course='C_AI310'] { --stripe: #a21caf; }

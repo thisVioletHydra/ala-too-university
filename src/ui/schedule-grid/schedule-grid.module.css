@@ -1,0 +1,43 @@
+.grid {
+  display: grid;
+  grid-template-columns: 3rem repeat(5, minmax(12rem, 1fr));
+  min-inline-size: 0;
+  flex: 1;
+  min-block-size: 0;
+  align-content: start;
+  grid-auto-rows: max-content;
+  overflow: auto;
+  scrollbar-gutter: stable;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fff;
+  box-shadow: var(--shadow);
+
+  :focus-visible:not([data-over='yes']):not([data-aim='yes']) {
+    outline: none;
+    box-shadow: none;
+  }
+}
+
+.corner,
+.head,
+.time {
+  padding: 0.55rem 0.35rem;
+  border-block-end: 1px solid var(--line);
+  background: #f8fafc;
+  color: var(--ink);
+  font-size: 0.875rem;
+  font-weight: 650;
+  text-align: center;
+}
+
+.head,
+.time {
+  border-inline-end: 1px solid var(--line);
+}
+
+.time {
+  padding-inline: 0.15rem;
+  white-space: nowrap;
+}
+
