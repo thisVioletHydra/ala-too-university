@@ -23,7 +23,6 @@ type HandStep = {
   slot: number
   hand: Hand | null
   focus: boolean
-  aim?: string
 };
 
 export function useHand(input: HandInput) {
@@ -52,7 +51,7 @@ export function useHand(input: HandInput) {
     setArmed(true);
     board.setHold({
       hand: next.hand,
-      aim: next.aim ?? (returning ? 'list:return' : next.zone === 'list' ? `list:${next.list}` : key),
+      aim: returning ? 'list:return' : next.zone === 'list' ? `list:${next.list}` : key,
       overKey: next.hand && next.zone === 'grid' ? key : null,
       overList: returning,
     });
@@ -259,10 +258,7 @@ export function useHand(input: HandInput) {
         day,
         slot,
         hand: { kind: 'section', sectionId },
-        // Pointer pickup must not focus the grid's remembered keyboard cell.
-        // The dashed aim is set later when the pointer enters a slot.
-        focus: false,
-        aim: '',
+        focus: true,
       });
     },
     grabLesson: (lessonId: string, dayIndex: number, slotIndex: number) => {
@@ -272,10 +268,7 @@ export function useHand(input: HandInput) {
         day: dayIndex,
         slot: slotIndex,
         hand: { kind: 'lesson', lessonId },
-        // Pointer click picks up the card, but does not move the keyboard
-        // target until the pointer actually enters another slot.
-        focus: false,
-        aim: '',
+        focus: true,
       });
     },
     enter: (next: Zone) => {

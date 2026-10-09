@@ -29,7 +29,13 @@ type ScheduleGridProps = {
 
 export function ScheduleGrid(props: ScheduleGridProps) {
   return (
-    <div className={styles.grid} data-keyboard-zone="grid" onFocus={props.onEnter}>
+    <div
+      className={styles.grid}
+      data-keyboard-zone="grid"
+      onFocus={(event) => {
+        if (event.target.matches(':focus-visible')) props.onEnter();
+      }}
+    >
       <div className={styles.corner} aria-hidden="true" />
       {props.catalog.weekDays.map((day) => (
         <div key={day.id} className={styles.head} title={day.label}>{shortDay[day.id]}</div>
