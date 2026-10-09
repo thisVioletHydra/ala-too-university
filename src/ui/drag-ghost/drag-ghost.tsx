@@ -1,27 +1,70 @@
 import type { Lesson, ScheduleCatalog } from '#schedule/types.ts';
 import type { ActiveDrag, Hand, Landing } from '#app/providers.tsx';
 import type { ReactNode } from 'react';
+import type { DropAnimation } from '@dnd-kit/core';
 
 import { DragOverlay } from '@dnd-kit/core';
 import { slotKey, useBoard } from '#app/providers.tsx';
 import { useSchedule } from '#app/schedule.store.ts';
 import { LessonPreview } from '#ui/lesson-card/lesson-card.tsx';
-import { SectionPreview } from '#ui/section-card/section-card.tsx';
 import { useEffect, useEffectEvent, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 import styles from '#ui/drag-ghost/drag-ghost.module.css';
 
-const dropAnimation = { duration: 250, easing: 'cubic-bezier(0.2, 0, 0, 1)' };
+const dropAnimation: DropAnimation = ({ active, dragOverlay }) => {
+  const sidebar = document.getElementById('sections-panel')?.getBoundingClientRect();
+  const x = dragOverlay.rect.left + dragOverlay.rect.width / 2;
+  const y = dragOverlay.rect.top + dragOverlay.rect.height / 2;
+  if (active.data.current?.kind === 'section' && sidebar && x >= sidebar.left && x <= sidebar.right && y >= sidebar.top && y <= sidebar.bottom) return;
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const data = active.data.current;
+  const placed = data?.kind === 'lesson' && !data.copy && typeof data.lessonId === 'string'
+    ? document.querySelector<HTMLElement>(`[data-lesson-id="${CSS.escape(data.lessonId)}"]`)
+    : null;
+  const opacity = placed?.style.opacity ?? '';
+  const transition = placed?.style.transition ?? '';
+  if (placed) {
+    placed.style.transition = 'none';
+    placed.style.opacity = '0';
+  }
+  const target = placed?.getBoundingClientRect();
+  const transform = getComputedStyle(dragOverlay.node).transform;
+  const position = transform === 'none' ? '' : transform;
+  const frames = target
+    ? [{ transform: position || 'none', opacity: 1 }, { transform: `translate3d(${target.left - dragOverlay.rect.left}px, ${target.top - dragOverlay.rect.top}px, 0) ${position}`, opacity: 1 }]
+    : [{ opacity: 1 }, { opacity: 0 }];
+  const animation = dragOverlay.node.animate(frames, { duration: 160, easing: 'ease-out', fill: 'forwards' });
+  return new Promise<void>((resolve) => {
+    function finish(): void {
+      if (placed) {
+        dragOverlay.node.style.visibility = 'hidden';
+        placed.style.opacity = opacity;
+        placed.getBoundingClientRect();
+        placed.style.transition = transition;
+      }
+      resolve();
+    }
+    animation.onfinish = finish;
+    animation.oncancel = finish;
+  });
+};
 const flight = '250ms cubic-bezier(0.2, 0, 0, 1)';
 const vanish = '140ms ease-out';
 const lift = '150ms cubic-bezier(0.2, 0, 0, 1)';
 
 export function DragGhost(props: { catalog: ScheduleCatalog }) {
-  const ghost = useBoard().ghost;
+  const board = useBoard();
+  const ghost = board.ghost;
+  const [width, setWidth] = useState<number | undefined>();
   const lessons = useSchedule((state) => state.lessons);
   const remembered = useSchedule((state) => state.rememberedTeachers);
   const card = ghost ? heldCard(props.catalog, lessons, remembered, ghost) : null;
+
+  useLayoutEffect(() => {
+    const cell = document.querySelector('[data-slot]');
+    setWidth(ghost?.kind === 'section' && cell instanceof HTMLElement ? insetBox(cell).width : undefined);
+  }, [ghost]);
 
   useEffect(() => {
     if (ghost === null || ghost === undefined) return;
@@ -34,8 +77,8 @@ export function DragGhost(props: { catalog: ScheduleCatalog }) {
   }, [ghost]);
 
   return (
-    <DragOverlay dropAnimation={dropAnimation}>
-      {card ? <div className={styles.preview}>{card}</div> : null}
+    <DragOverlay dropAnimation={dropAnimation} zIndex={30}>
+      {card ? <div className={styles.preview} style={{ width }}>{card}</div> : null}
     </DragOverlay>
   );
 }
@@ -76,7 +119,7 @@ export function HandCursor(props: { catalog: ScheduleCatalog }) {
       if (!el || el.style.visibility === 'hidden') return;
 
       el.style.transition = 'none';
-      el.style.transform = `translate(${event.clientX + 12}px, ${event.clientY + 12}px)`;
+      placeAt(el, event.clientX, event.clientY);
     }
 
     window.addEventListener('pointermove', remember);
@@ -141,9 +184,8 @@ export function HandCursor(props: { catalog: ScheduleCatalog }) {
       el.style.opacity = '0';
       el.style.scale = '0.96';
     } else {
-      el.style.transition = `transform ${flight}, inline-size ${flight}`;
+      el.style.transition = `transform ${flight}`;
       el.style.transform = `translate(${to.left}px, ${to.top}px)`;
-      el.style.inlineSize = `${to.width}px`;
     }
 
     let settled = false;
@@ -189,7 +231,9 @@ export function HandCursor(props: { catalog: ScheduleCatalog }) {
 
     const source = sourceNode(hand);
     const box = source?.getBoundingClientRect() ?? null;
-    if (box) el.style.inlineSize = `${box.width}px`;
+    const cell = document.querySelector('[data-slot]');
+    const width = hand.kind === 'section' && cell instanceof HTMLElement ? insetBox(cell).width : box?.width;
+    if (width) el.style.inlineSize = `${width}px`;
 
     if (fromKeys.current) {
       // Клавиатура: летящая карточка стартует ровно на месте исходной и уже
@@ -270,7 +314,7 @@ function insetBox(node: HTMLElement): { left: number, top: number, width: number
 }
 
 function placeAt(element: HTMLElement, x: number, y: number): void {
-  element.style.transform = `translate(${x + 12}px, ${y + 12}px)`;
+  placeWithinViewport(element, x + 16, y - 16);
 }
 
 function placeAim(element: HTMLElement): void {
@@ -278,12 +322,23 @@ function placeAim(element: HTMLElement): void {
   if (!(aim instanceof HTMLElement)) return;
 
   const rect = aim.getBoundingClientRect();
-  const top = Math.max(8, rect.top - element.offsetHeight - 8);
-  element.style.transform = `translate(${rect.left}px, ${top}px)`;
+  if (aim.matches('[data-section-scroll]')) {
+    const top = Math.max(8, rect.top);
+    const bottom = Math.min(window.innerHeight - 8, rect.bottom);
+    placeWithinViewport(element, rect.left + (rect.width - element.offsetWidth) / 2, top + (bottom - top) / 2 + 24);
+    return;
+  }
+  placeWithinViewport(element, rect.right - element.offsetWidth * 0.4, rect.bottom - 24);
+}
+
+function placeWithinViewport(element: HTMLElement, left: number, top: number): void {
+  const x = Math.max(8, Math.min(left, window.innerWidth - element.offsetWidth - 8));
+  const y = Math.max(8, Math.min(top, window.innerHeight - element.offsetHeight - 8));
+  element.style.transform = `translate(${x}px, ${y}px)`;
 }
 
 function heldDrag(hand: Hand): ActiveDrag {
-  if (hand.kind === 'section') return { kind: 'section', sectionId: hand.sectionId };
+  if (hand.kind === 'section') return { ...hand };
 
   return { kind: 'lesson', lessonId: hand.lessonId, copy: false };
 }
@@ -307,16 +362,20 @@ function heldCard(
     if (section === null || section === undefined) return null;
 
     const course = catalog.courses.find((item) => item.id === section.courseId);
-    const teacherId = section.teacherId ?? remembered[section.id];
+    const teacherId = drag.teacherId ?? section.teacherId ?? remembered[section.id];
+    const room = catalog.rooms.find((item) => item.id === drag.roomId);
     const teacher = catalog.teachers.find((item) => item.id === teacherId);
 
     return (
-      <SectionPreview
-        section={section}
+      <LessonPreview
+        courseId={section.courseId}
         courseName={course?.name ?? section.code}
         courseCode={course?.code ?? section.code}
-        teacherName={teacher?.shortName ?? null}
-        lessons={lessons}
+        code={section.code}
+        teacherName={teacher?.shortName ?? 'Выбор преподавателя'}
+        roomName={room?.name ?? 'Не выбрана'}
+        roomType={room?.type ?? section.preferredRoomType}
+        preferredRoomType={section.preferredRoomType}
       />
     );
   }

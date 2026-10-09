@@ -14,17 +14,13 @@
   transition: border-color 150ms ease, box-shadow 150ms ease, opacity 150ms ease, background 150ms ease;
 
   &:focus-visible {
-    outline: 2px solid var(--focus);
-    outline-offset: 2px;
+    outline: none;
+    box-shadow: var(--focus-halo);
   }
 
   &:hover {
     border-color: var(--line-strong);
     background: var(--panel-soft);
-  }
-
-  &:active {
-    transform: scale(0.995);
   }
 
   &[data-dim='yes'] {
@@ -239,3 +235,24 @@
     background: var(--ok-soft);
   }
 }
+
+.card { padding: 0.65rem 0.75rem; box-shadow: none; gap: 0.4rem; }
+.card:not([data-overlay='yes']) .name { display: none; }
+.card .rail { display: none; }
+.card[data-state='done']:not([data-dim='yes']):not([data-overlay='yes']) { opacity: 0.6; }
+.meta { flex-direction: row-reverse; }
+.teacher { font-size: 0.88rem; color: var(--ink); font-weight: 550; }
+.chip { font-family: ui-monospace, monospace; background: transparent; border: 0; padding: 0; }
+
+.head .teacher { margin-inline-end: auto; }
+.head .count { display: none; }
+.meta { justify-content: flex-start; font-size: 0.73rem; }
+.foot { justify-content: flex-start; gap: 0.6rem; flex-wrap: wrap; }
+.segments { display: flex; gap: 4px; flex-wrap: wrap; }
+.segments i { width: 18px; height: 6px; border-radius: 999px; background: var(--line); }
+.segments i[data-filled='yes'] { background: var(--ok); }
+.segments i[data-filled='yes'][data-extra='yes'] { background: var(--warn); }
+.card[data-state='done']:not([data-dim='yes']):not([data-overlay='yes']) { opacity: 0.8; }
+
+.card[data-dragging='yes'] { opacity: 1; border-style: dashed; border-color: var(--brand); background: var(--brand-soft); }
+.card[data-dragging='yes']::after { content: 'В руке'; position: absolute; inset-block-start: 0.2rem; inset-inline-end: 0.5rem; padding-inline: 0.25rem; border-radius: 4px; background: var(--brand-soft); font-size: 0.6rem; color: var(--brand-ink); pointer-events: none; }

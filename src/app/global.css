@@ -46,8 +46,8 @@ body[data-drag='yes'] {
   }
 
   :focus-visible {
-    outline: 2px solid var(--focus);
-    outline-offset: 2px;
+    outline: none;
+    box-shadow: var(--focus-halo);
   }
 
   .shell {
@@ -156,50 +156,6 @@ body[data-drag='yes'] {
   }
 }
 
-/* Во время перетаскивания: короткая подсказка, что значат цвета. */
-.board-note {
-  position: fixed;
-  z-index: 40;
-  inset-block-end: 1.15rem;
-  inset-inline-start: 50%;
-  display: flex;
-  gap: 0.9rem;
-  align-items: center;
-  margin: 0;
-  padding: 0.5rem 0.85rem;
-  translate: -50% 0;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background: var(--surface-float);
-  color: var(--text);
-  font-size: 0.78rem;
-  font-weight: 500;
-  white-space: nowrap;
-  box-shadow: var(--shadow);
-  animation: note-in 160ms ease-out;
-  pointer-events: none;
-}
-
-.board-note span {
-  display: inline-flex;
-  gap: 0.35rem;
-  align-items: center;
-}
-
-.board-note i {
-  inline-size: 8px;
-  block-size: 8px;
-  border-radius: 999px;
-}
-
-.board-note i[data-tone='ok'] {
-  background: var(--ok);
-}
-
-.board-note i[data-tone='bad'] {
-  background: var(--bad);
-}
-
 @keyframes note-in {
   from {
     opacity: 0;
@@ -275,3 +231,95 @@ html {
 *::-webkit-scrollbar-corner {
   background: transparent;
 }
+
+.schedule-progress { flex: 1 1 16rem; max-inline-size: 24rem; }
+.schedule-progress > div { display: flex; justify-content: space-between; gap: 1rem; font-size: 0.78rem; margin-block-end: 0.4rem; }
+.schedule-progress span { color: var(--muted); }
+.schedule-progress progress { appearance: none; inline-size: 100%; block-size: 7px; border: 0; border-radius: 999px; overflow: hidden; background: var(--panel-sunken); }
+.schedule-progress progress::-webkit-progress-bar { background: var(--panel-sunken); }
+.schedule-progress progress::-webkit-progress-value { background: var(--ok); border-radius: 999px; }
+.schedule-progress progress::-moz-progress-bar { background: var(--ok); }
+.top h1::before { content: '▦'; display: inline-grid; place-items: center; inline-size: 30px; block-size: 30px; margin-inline-end: 0.6rem; background: var(--brand); color: var(--ok-line); border-radius: 10px; }
+.interaction-hint { display: flex; flex-wrap: wrap; gap: 0.3rem 1rem; align-items: center; padding: 0.75rem 1rem; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--panel); font-size: 0.82rem; }
+.interaction-hint small { color: var(--muted); margin-inline-start: auto; font-size: 0.72rem; }
+.interaction-hint[data-active='yes'] { background: var(--brand); color: var(--on-brand); }
+.interaction-hint[data-active='yes'] small { color: var(--ok-line); }
+@media (width > 1100px) { .workspace { grid-template-columns: minmax(19rem, 22rem) minmax(0, 1fr); } }
+
+.top h1::before { content: none; }
+.top h1 { display: flex; align-items: center; gap: 0.6rem; }
+.app-logo { width: 34px; height: 34px; }
+.board-tools { display: flex; align-items: stretch; gap: 0.65rem; flex-wrap: wrap; }
+.workspace[data-sections='hidden'] { grid-template-columns: minmax(0, 1fr); }
+.board-tools .interaction-hint { flex: 1 1 24rem; flex-direction: column; align-items: flex-start; gap: 0.25rem; }
+.board-tools .interaction-hint small { margin-inline-start: 0; }
+
+.settings-trigger { display: grid; place-items: center; width: 38px; height: 38px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); color: var(--text); }
+.settings-trigger:hover { background: var(--panel-soft); }
+.settings-popover { position: fixed; inset: 5rem 1.25rem auto auto; margin: 0; width: min(360px, calc(100vw - 2rem)); padding: 1rem; border: 1px solid var(--line); border-radius: 18px; background: var(--panel); color: var(--text); box-shadow: 0 12px 48px #182d3926; }
+.settings-popover header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.6rem; }
+.settings-popover h2 { margin: 0; font-size: 1rem; }
+.settings-popover header button { border: 0; background: var(--panel-soft); color: var(--muted); border-radius: 8px; width: 30px; height: 30px; font-size: 1.2rem; }
+.settings-row { display: flex; align-items: center; gap: 1rem; padding-block: 0.85rem; border-top: 1px solid var(--line); cursor: pointer; }
+.settings-row span { flex: 1; }
+.settings-row strong { display: block; font-size: 0.85rem; }
+.settings-row small { display: block; color: var(--muted); font-size: 0.75rem; margin-top: 0.25rem; }
+.settings-row input { appearance: none; flex: 0 0 38px; width: 38px; height: 22px; margin: 0; border-radius: 999px; background: var(--line-strong); cursor: pointer; transition: background 150ms; }
+.settings-row input::before { content: ''; display: block; width: 16px; height: 16px; margin: 3px; border-radius: 50%; background: white; box-shadow: 0 1px 3px #0002; transition: translate 150ms; }
+.settings-row input:checked { background: var(--focus); }
+.settings-row input:checked::before { translate: 16px 0; }
+.keyboard-hints-slot { flex: 1 1 28rem; display: flex; align-items: center; justify-content: center; min-inline-size: 0; }
+.top { row-gap: .25rem; }
+.top > div:first-child { flex: 1 1 15rem; }
+.keyboard-hints {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: .25rem .6rem;
+  max-width: 100%;
+  color: var(--muted);
+  pointer-events: none;
+  animation: keyboard-hints-in 160ms ease-out;
+}
+@keyframes keyboard-hints-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.keyboard-hints span { display: inline-flex; align-items: center; gap: .25rem; font-size: .65rem; white-space: nowrap; }
+.keyboard-hints kbd { min-width: 1.15rem; padding: .04rem .22rem; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; background: rgb(255 255 255 / 55%); color: var(--muted); font: inherit; line-height: 1.35; text-align: center; }
+@media (width <= 1024px), (hover: none), (pointer: coarse) { .keyboard-hints, .keyboard-hints-slot { display: none; } }
+
+:where(button, input, select, [tabindex]) { transition: box-shadow 180ms ease, border-color 180ms ease, background-color 180ms ease; }
+@media (forced-colors: active) { :focus-visible { outline: 2px solid Highlight !important; outline-offset: 2px; } }
+
+:focus-visible { outline: none; box-shadow: var(--focus-halo) !important; }
+[data-slot]:focus-visible { box-shadow: none !important; }
+body[data-hand='yes'] [data-slot]:not([data-aim='yes']):not([data-over='yes']):focus-visible::after { content: none; }
+
+.sections-pane { min-width: 0; min-height: 0; overflow: hidden; opacity: 1; transition: opacity 180ms ease, translate 260ms ease, max-height 260ms ease; }
+.shell { max-inline-size: calc(1400px + 22rem + 1rem + 2.3rem); margin-inline: auto; }
+.board { inline-size: 100%; max-inline-size: 1400px; justify-self: center; }
+.workspace { transition: grid-template-columns 260ms ease, gap 260ms ease; }
+.workspace[data-sections='hidden'] { gap: 0; }
+.workspace[data-sections='hidden'] .sections-pane { opacity: 0; translate: -12px 0; pointer-events: none; }
+@media (width > 1100px) {
+  .workspace { grid-template-columns: minmax(0, 22rem) minmax(0, 1fr); }
+  .workspace[data-sections='hidden'] { grid-template-columns: minmax(0, 0rem) minmax(0, 1fr); }
+  .sections-pane > aside { width: 22rem; }
+}
+@media (width <= 1100px) {
+  .sections-pane { max-height: 26rem; }
+  .workspace[data-sections='hidden'] .sections-pane { max-height: 0; }
+}
+
+.schedule-summary { display: flex; flex: 1 1 20rem; align-items: center; gap: 0.65rem; min-width: 0; padding: 0.55rem 0.75rem; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); font-size: 0.75rem; }
+.schedule-summary strong { font-size: 0.8rem; white-space: nowrap; }
+.schedule-summary strong span { color: var(--muted); font-weight: 450; }
+.schedule-summary > span { color: var(--muted); white-space: nowrap; font-size: 0.7rem; }
+.schedule-summary progress { appearance: none; flex: 1; width: 4rem; min-width: 2rem; max-width: 10rem; height: 4px; border: 0; border-radius: 999px; overflow: hidden; background: var(--panel-sunken); }
+.schedule-summary progress::-webkit-progress-bar { background: var(--panel-sunken); }
+.schedule-summary progress::-webkit-progress-value { background: var(--brand); border-radius: 999px; }
+.schedule-summary progress::-moz-progress-bar { background: var(--brand); }
+
+.schedule-summary .transfer-origin { flex: 1; white-space: normal; color: var(--text); }

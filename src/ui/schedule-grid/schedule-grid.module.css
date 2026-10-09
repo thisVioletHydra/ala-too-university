@@ -1,5 +1,6 @@
 .grid {
   display: grid;
+  isolation: isolate;
   grid-template-columns: 3.4rem repeat(5, minmax(11.5rem, 1fr));
   flex: 1;
   min-inline-size: 0;
@@ -10,7 +11,7 @@
   scrollbar-gutter: stable;
   border: 1px solid var(--line);
   border-radius: var(--r-lg);
-  background: var(--panel-soft);
+  background: var(--panel);
   box-shadow: var(--shadow);
 
   /* Сетка получает фокус программно — рамку показывают слоты. */
@@ -81,3 +82,40 @@
     grid-template-columns: 3.2rem repeat(5, minmax(9.5rem, 1fr));
   }
 }
+
+.head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.55rem;
+  padding: 0.8rem 0.65rem;
+  color: var(--ink);
+  text-align: start;
+}
+.dayName { color: var(--muted); font-weight: 400; }
+.time { padding-block: 0.85rem; }
+@media (width < 1350px) { .dayName { display: none; } }
+
+@media (width <= 600px) { .grid { grid-template-columns: 3.2rem repeat(5, minmax(11rem, 1fr)); } }
+
+.lessons { display: grid; gap: 4px; min-inline-size: 0; }
+.strip { display: flex; align-items: center; justify-content: space-between; gap: .4rem; min-inline-size: 0; inline-size: 100%; min-block-size: 1.85rem; padding: .35rem .5rem; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: var(--text); cursor: pointer; font-size: .7rem; }
+.strip strong { color: var(--course-text); font-family: ui-monospace, monospace; font-size: .68rem; white-space: nowrap; }
+.strip > span { color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.strip:hover { background: var(--panel-soft); border-color: var(--line-strong); }
+.strip[data-dimmed='yes'] { opacity: .4; }
+.strip { position: relative; padding-inline-start: .65rem; }
+.strip::before { content: ''; position: absolute; inset-inline-start: 0; inset-block: .3rem; inline-size: 3px; border-radius: 0 3px 3px 0; background: var(--rail-strong); }
+.stripCode { display: inline-flex; align-items: center; gap: .3rem; min-inline-size: 0; }
+.stripCode strong { padding: .08rem .3rem; border: 1px solid var(--chip-line); border-radius: 5px; background: var(--chip-bg); color: var(--chip-ink); font-size: .64rem; }
+.stripCode > span { color: var(--muted); font-size: .65rem; }
+.stripRoom { display: inline-flex; align-items: center; gap: .25rem; padding: .08rem .3rem; border: 1px solid var(--line-soft); border-radius: 5px; background: var(--panel-sunken); font-size: .65rem; font-weight: 550; }
+.summary { display: grid; gap: .2rem; padding: .5rem; min-block-size: 4.7rem; border: 1px solid var(--line); border-radius: var(--r-sm); font-size: .72rem; }
+.summary span { color: var(--muted); }
+.picker { inline-size: min(25rem, calc(100vw - 2rem)); max-block-size: calc(100dvh - 3rem); padding: 1rem; border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--panel); color: var(--text); box-shadow: var(--lift); overflow: auto; }
+.picker::backdrop { background: rgb(25 40 65 / .22); backdrop-filter: blur(3px); }
+.pickerHead { display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-block-end: .8rem; }
+.pickerHead div { display: grid; gap: .25rem; }
+.pickerHead span { color: var(--muted); font-size: .75rem; }
+.pickerHead button { border: 1px solid var(--line); border-radius: 10px; background: var(--panel); color: var(--muted); inline-size: 2rem; block-size: 2rem; font-size: 1.25rem; cursor: pointer; }
+.pickerList { display: grid; gap: .6rem; }
+.pickerHint { margin-block: .8rem 0; color: var(--muted); font-size: .7rem; line-height: 1.5; }

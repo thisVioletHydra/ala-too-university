@@ -12,5 +12,6 @@
   inset-inline-start: 0;
   pointer-events: none;
   visibility: hidden;
-  filter: var(--shadow-float);
 }
+
+.preview { max-inline-size: none; }

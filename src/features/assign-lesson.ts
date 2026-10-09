@@ -15,6 +15,8 @@ export type AssignOutcome =
 
 export type AssignRequest = {
   sectionId: string
+  teacherId?: string
+  roomId?: string
   day: WeekDay
   timeSlotId: string
 };
@@ -27,7 +29,7 @@ export function assignLesson(input: AssignRequest): AssignOutcome {
   if (section === null || section === undefined) return { type: 'rejected', text: 'Секция не найдена' };
 
   const remembered = rememberedTeachers[section.id] ?? null;
-  const teacherId = section.teacherId ?? remembered;
+  const teacherId = input.teacherId ?? section.teacherId ?? remembered;
   const advice = explainSlot({
     section,
     day: input.day,
@@ -37,7 +39,7 @@ export function assignLesson(input: AssignRequest): AssignOutcome {
     sections: catalog.sections,
     blockedSlots: catalog.blockedSlots,
     teacherId,
-    roomId: null,
+    roomId: input.roomId ?? null,
   });
 
   if (!advice.ok && !advice.needsChoice) {

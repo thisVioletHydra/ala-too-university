@@ -36,6 +36,7 @@ type SectionFields = {
 
 type SectionCardProps = SectionFields & {
   highlighted: boolean
+  dimmed?: boolean
   index: number
   tabStop: boolean
   onGrab: () => void
@@ -58,7 +59,7 @@ export function SectionCard(props: SectionCardProps) {
       {...props}
       overlay={false}
       dragging={isDragging || held}
-      dim={tray && !mine}
+      dim={(tray && !mine) || Boolean(props.dimmed)}
       aimed={board.hold.aim === `list:${props.index}`}
       nodeRef={setNodeRef}
       listeners={listeners}
@@ -108,13 +109,13 @@ type SectionFaceProps = SectionFields & {
 
 function SectionFace(props: SectionFaceProps) {
   const progress = sectionProgress(props.section, props.lessons);
-  const width = Math.min(progress.placed / progress.required, 1) * 100;
   const flashed = useBoard().flash.sectionId === props.section.id;
 
   return (
     <article
       ref={props.nodeRef}
       className={styles.card}
+      aria-label={`${props.courseName}, ${props.section.code}, ${props.teacherName ?? 'Без преподавателя'}. ${progressPhrase(progress.state, progress.placed, progress.required)}`}
       data-state={progress.state}
       data-course={props.section.courseId}
       data-highlighted={props.highlighted ? 'yes' : 'no'}
@@ -131,6 +132,7 @@ function SectionFace(props: SectionFaceProps) {
     >
       <span className={styles.rail} aria-hidden="true" />
       <div className={styles.head}>
+        <span className={styles.teacher} data-missing={props.teacherName === null ? 'yes' : 'no'}>{props.teacherName ?? 'Без преподавателя'}</span>
         <span className={styles.chip}>{props.courseCode}</span>
         <span className={styles.no}>{sectionNo(props.courseCode, props.section.code)}</span>
         <span className={styles.count} title={`Поставлено ${progress.placed} из ${progress.required}`}>
@@ -142,16 +144,10 @@ function SectionFace(props: SectionFaceProps) {
       <p className={styles.name}>{props.courseName}</p>
       <p className={styles.meta}>
         <span className={styles.students}>{props.section.studentsCount} {studentsWord(props.section.studentsCount)}</span>
-        <span
-          className={styles.teacher}
-          data-missing={props.teacherName === null ? 'yes' : 'no'}
-        >
-          {props.teacherName ?? 'Без преподавателя'}
-        </span>
       </p>
       <div className={styles.foot}>
-        <span className={styles.track}>
-          <span className={styles.bar} style={{ inlineSize: `${width}%` }} />
+        <span className={styles.segments} role="progressbar" aria-label="Занятия секции" aria-valuemin={0} aria-valuemax={Math.max(progress.required, progress.placed)} aria-valuenow={progress.placed}>
+          {Array.from({ length: Math.max(progress.required, progress.placed) }, (_, index) => <i key={index} data-filled={index < progress.placed ? 'yes' : 'no'} data-extra={index >= progress.required ? 'yes' : 'no'} />)}
         </span>
         <span className={styles.phrase}>{progressPhrase(progress.state, progress.placed, progress.required)}</span>
       </div>

@@ -7,7 +7,8 @@ import { useSchedule } from '#app/schedule.store.ts';
 import { explainSlot } from '#schedule/conflicts.ts';
 import { placementConflict } from '#schedule/conflicts.ts';
 import { plural } from '#ui/plural.ts';
-import { useState } from 'react';
+import { Select } from '#ui/select/select.tsx';
+import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 import styles from '#ui/lesson-editor/lesson-editor.module.css';
@@ -27,6 +28,31 @@ type LessonEditorProps = {
 };
 
 export function LessonEditor(props: LessonEditorProps) {
+  const dialog = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const previous = document.activeElement;
+    const root = dialog.current;
+    const controls = () => Array.from(root?.querySelectorAll<HTMLElement>('button:not(:disabled), select:not(:disabled), input:not(:disabled), [tabindex="0"]') ?? []);
+    (root?.querySelector<HTMLElement>('[role="combobox"]') ?? controls()[0])?.focus();
+    function trap(event: KeyboardEvent): void {
+      if (event.key !== 'Tab') return;
+      const items = controls();
+      const first = items[0];
+      const last = items[items.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last?.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first?.focus();
+      }
+    }
+    root?.addEventListener('keydown', trap);
+    return () => {
+      root?.removeEventListener('keydown', trap);
+      if (previous instanceof HTMLElement && previous.isConnected) previous.focus();
+    };
+  }, []);
   const lessons = useSchedule((state) => state.lessons);
   const mark = useBoard().mark;
   const draft = draftOf(props.catalog, props.request, lessons);
@@ -82,9 +108,23 @@ export function LessonEditor(props: LessonEditorProps) {
   return createPortal(
     <div className={styles.backdrop} onClick={props.onClose}>
       <div
+        ref={dialog}
         className={styles.dialog}
         role="dialog"
         aria-labelledby="editor-title"
+        aria-modal="true"
+        onKeyDownCapture={(event) => {
+          if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key) || event.altKey || event.ctrlKey || event.metaKey) return;
+          const target = event.target;
+          if (!(target instanceof Element)) return;
+          if (target.closest('[role="combobox"][aria-expanded="true"]')) return;
+          const controls = Array.from(event.currentTarget.querySelectorAll<HTMLElement>('button:not(:disabled), select:not(:disabled), input:not(:disabled), [tabindex="0"]'));
+          const current = controls.indexOf(document.activeElement as HTMLElement);
+          const direction = event.key === 'ArrowUp' || event.key === 'ArrowLeft' ? -1 : 1;
+          event.preventDefault();
+          event.stopPropagation();
+          controls[(current + direction + controls.length) % controls.length]?.focus();
+        }}
         onClick={(event) => event.stopPropagation()}
       >
         <header className={styles.head}>
@@ -114,9 +154,7 @@ export function LessonEditor(props: LessonEditorProps) {
         <div className={styles.fields}>
           <label className={styles.field}>
             <span className={styles.label}>Преподаватель</span>
-            <select value={teacherId} onChange={(event) => setTeacherId(event.target.value)}>
-              <option value="">Выберите</option>
-              {section.allowedTeacherIds.map((id) => {
+            <Select label="Преподаватель" value={teacherId} onChange={setTeacherId} options={[{ value: '', label: 'Выберите преподавателя' }, ...section.allowedTeacherIds.map((id) => {
                 const teacher = props.catalog.teachers.find((item) => item.id === id);
                 const advice = explainSlot({
                   section,
@@ -131,19 +169,12 @@ export function LessonEditor(props: LessonEditorProps) {
                   excludeLessonId: draft.excludeLessonId,
                 });
                 const blocked = !advice.ok && !advice.needsChoice;
-                return (
-                  <option key={id} value={id} disabled={blocked} title={advice.text ?? ''}>
-                    {teacher?.shortName ?? id}{blocked ? ` — ${advice.text}` : ''}
-                  </option>
-                );
-              })}
-            </select>
+                return { value: id, label: teacher?.shortName ?? id, disabled: blocked, detail: blocked ? advice.text ?? undefined : undefined };
+              })]} />
           </label>
           <label className={styles.field}>
             <span className={styles.label}>Аудитория</span>
-            <select value={roomId} onChange={(event) => setRoomId(event.target.value)}>
-              <option value="">Выберите</option>
-              {props.catalog.rooms.map((room) => {
+            <Select label="Аудитория" value={roomId} onChange={setRoomId} options={[{ value: '', label: 'Выберите аудиторию' }, ...props.catalog.rooms.map((room) => {
                 const tooSmall = room.capacity < section.studentsCount;
                 const busy = teacherId
                   ? placementConflict({
@@ -168,13 +199,8 @@ export function LessonEditor(props: LessonEditorProps) {
                   : roomProblem && !busy.ok
                     ? busy.text
                     : '';
-                return (
-                  <option key={room.id} value={room.id} disabled={disabled} title={title}>
-                    {room.name} · {room.capacity}{title ? ` — ${title}` : ''}
-                  </option>
-                );
-              })}
-            </select>
+                return { value: room.id, label: `${room.name} · ${room.capacity} мест`, disabled, detail: title || undefined };
+              })]} />
           </label>
         </div>
         <p className={styles.note} data-tone={reason ? 'bad' : 'calm'}>

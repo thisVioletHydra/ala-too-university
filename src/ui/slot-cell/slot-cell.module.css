@@ -3,39 +3,54 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
-  min-block-size: 4.6rem;
-  padding: 0.28rem;
+  min-block-size: 6.6rem;
+  padding: 0.4rem;
   border-block-end: 1px solid var(--line);
   border-inline-end: 1px solid var(--line);
   background: transparent;
 
   /* Подсветка допустимости появляется только во время перетаскивания. */
   &[data-tone='ok'] {
-    background: var(--drop-ok);
+    background: transparent;
   }
 
   &[data-tone='bad'] {
-    background: var(--drop-bad);
+    background: transparent;
   }
 
   &[data-over='yes'] {
     z-index: 1;
-    outline: 2px dashed var(--brand);
-    outline-offset: -2px;
   }
 
   &[data-over='yes'][data-tone='ok'] {
-    outline-color: var(--ok);
+    background: var(--brand-soft);
   }
 
   &[data-over='yes'][data-tone='bad'] {
-    outline-color: var(--bad);
+    background: var(--bad-soft);
   }
 
-  &[data-aim='yes']:not([data-over='yes']) {
-    outline: 2px dashed var(--focus);
-    outline-offset: -2px;
-  }
+}
+
+.cell:focus-visible::after,
+.cell[data-over='yes']::after,
+.cell[data-aim='yes'][data-carrying='yes']:not([data-over='yes'])::after {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  border-radius: var(--r-sm);
+  box-shadow: inset 0 0 0 2px var(--focus), inset 0 0 0 5px var(--ring);
+  pointer-events: none;
+  transition: box-shadow 180ms ease;
+}
+
+.cell[data-over='yes'][data-tone='bad']::after {
+  border-color: var(--bad);
+}
+
+.cell[data-over='yes']::after {
+  border: 2px dashed var(--brand);
+  box-shadow: none;
 }
 
 /* Последний день недели: внешнюю рамку рисует контейнер сетки. */
@@ -83,3 +98,21 @@
 .tipText {
   min-inline-size: 0;
 }
+
+.cell[data-tone='bad'] {
+  background-image: repeating-linear-gradient(-45deg, color-mix(in srgb, var(--bad) 24%, transparent) 0 1px, transparent 1px 8px);
+}
+
+.cell[data-unavailable='yes'] {
+  background-image: repeating-linear-gradient(-45deg, var(--line-soft) 0 1px, transparent 1px 8px);
+}
+.unavailable { margin: auto; color: var(--muted); font-size: 0.7rem; text-align: center; }
+
+.origin { position: absolute; inset: 7px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 0.3rem; border: 1px dashed var(--line-strong); border-radius: var(--r-sm); background: var(--panel-sunken); color: var(--muted); pointer-events: none; }
+.origin strong { font-size: 0.82rem; color: var(--text); }
+.origin > span { font-size: 0.68rem; }
+.dropLabel { position: fixed; transform: translate(-50%, -50%); padding: 0.35rem 0.6rem; border: 1px solid rgb(255 255 255 / .7); border-radius: 8px; background: var(--brand); color: white; font-size: 0.72rem; font-weight: 600; text-align: center; pointer-events: none; z-index: 40; box-shadow: var(--shadow); }
+.dropLabel[data-ok='no'] { background: var(--bad-ink); }
+.dropLabel[data-remove='yes'] { background: var(--warn-soft); color: var(--warn-ink); border-color: var(--warn-line); }
+.cell[data-over='yes'][data-remove='yes'] { background: var(--warn-soft); }
+.cell[data-over='yes'][data-remove='yes']::after { border-color: var(--warn); }

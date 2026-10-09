@@ -16,19 +16,22 @@ type LessonFields = {
   preferredRoomType: RoomType
 };
 
-type LessonCardProps = LessonFields & {
+export type LessonCardProps = LessonFields & {
   lessonId: string
   sectionId: string
   highlighted: boolean
+  dimmed?: boolean
+  compact?: boolean
   onGrab: () => void
   onDrop: () => void
 };
 
 export function LessonCard(props: LessonCardProps) {
   const board = useBoard();
-  const picked = board.ghost?.kind === 'lesson'
-    ? board.ghost.lessonId === props.lessonId
-    : board.hold.hand?.kind === 'lesson' && board.hold.hand.lessonId === props.lessonId;
+  const landing = board.landing?.kind === 'card' && board.landing.lessonId === props.lessonId;
+  const picked = landing || (board.ghost?.kind === 'lesson'
+    ? !board.repeat && !board.ghost.copy && board.ghost.lessonId === props.lessonId
+    : !board.repeat && board.hold.hand?.kind === 'lesson' && board.hold.hand.lessonId === props.lessonId);
   const busy = board.ghost !== null || board.hold.hand !== null;
   const { attributes, listeners, setNodeRef } = useDraggable({
     id: `lesson:${props.lessonId}`,
@@ -39,6 +42,7 @@ export function LessonCard(props: LessonCardProps) {
   return (
     <LessonFace
       {...props}
+      dimmed={!picked && Boolean(props.dimmed)}
       overlay={false}
       held={picked}
       nodeRef={setNodeRef}
@@ -69,18 +73,10 @@ export function LessonPreview(props: LessonFields) {
   return <LessonFace {...props} highlighted={false} overlay held={false} />;
 }
 
-const roomWarning = 'Аудитория не того типа, который предпочтителен для этой секции';
-
-function RoomMark() {
-  return (
-    <span className={styles.warn} title={roomWarning}>
-      <svg viewBox="0 0 16 16" aria-hidden="true">
-        <circle cx="8" cy="8" r="7" fill="currentColor" />
-        <path d="M7.3 4.4h1.4v4.6H7.3zM7.3 10.4h1.4v1.4H7.3z" />
-      </svg>
-      <span className={styles.sr}>{roomWarning}</span>
-    </span>
-  );
+export function RoomIcon(props: { type: RoomType }) {
+  return <svg className={styles.roomIcon} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    {props.type === 'COMPUTER_LAB' ? <><rect x="3" y="3" width="10" height="7" rx="1" /><path d="m3 10-1 3h12l-1-3M6 12h4" /></> : <><rect x="2" y="2" width="12" height="8" rx="1" /><path d="M8 10v4m-3 0 3-2 3 2M5 5h6" /></>}
+  </svg>;
 }
 
 function sectionNo(courseCode: string, code: string): string {
@@ -93,6 +89,8 @@ function sectionNo(courseCode: string, code: string): string {
 type LessonFaceProps = LessonFields & {
   lessonId?: string
   highlighted: boolean
+  dimmed?: boolean
+  compact?: boolean
   overlay: boolean
   held: boolean
   nodeRef?: (element: HTMLElement | null) => void
@@ -104,8 +102,9 @@ type LessonFaceProps = LessonFields & {
 };
 
 function LessonFace(props: LessonFaceProps) {
-  const flash = useBoard().flash;
-  const otherRoom = props.roomType !== props.preferredRoomType;
+  const board = useBoard();
+  const flash = board.flash;
+  const roomTypeName = props.roomType === 'COMPUTER_LAB' ? 'Компьютерная лаборатория' : 'Учебная аудитория';
   const flashed = props.lessonId !== undefined && flash.lessonId === props.lessonId;
   const body = (
     <>
@@ -119,19 +118,21 @@ function LessonFace(props: LessonFaceProps) {
         <span className={styles.who}>{props.teacherName}</span>
         <span
           className={styles.room}
-          data-warn={otherRoom ? 'yes' : 'no'}
-          title={otherRoom ? roomWarning : undefined}
+          title={`${roomTypeName}: ${props.roomName}`}
         >
+          <RoomIcon type={props.roomType} />
+          <span className={styles.sr}>{roomTypeName}: </span>
           {props.roomName}
-          {otherRoom ? <RoomMark /> : null}
         </span>
       </span>
     </>
   );
   const shared = {
     className: styles.card,
+    'data-compact': props.compact ? 'yes' : 'no',
     'data-course': props.courseId,
     'data-highlighted': props.highlighted ? 'yes' : 'no',
+    'data-dimmed': props.dimmed ? 'yes' : 'no',
     'data-overlay': props.overlay ? 'yes' : 'no',
     'data-held': props.held ? 'yes' : 'no',
     'data-flash': flashed ? 'yes' : 'no',
@@ -142,6 +143,7 @@ function LessonFace(props: LessonFaceProps) {
   }
 
   return (
+    <div className={styles.wrap} data-held={props.held ? 'yes' : 'no'} data-dimmed={props.dimmed ? 'yes' : 'no'}>
     <button
       type="button"
       ref={props.nodeRef}
@@ -149,6 +151,7 @@ function LessonFace(props: LessonFaceProps) {
       {...props.listeners}
       {...props.attributes}
       data-lesson-id={props.lessonId}
+      title={props.compact ? `${props.courseName} · ${props.code} · ${props.teacherName} · ${props.roomName}` : undefined}
       tabIndex={-1}
       onClick={(event) => {
         if (event.detail === 0) return;
@@ -158,5 +161,6 @@ function LessonFace(props: LessonFaceProps) {
     >
       {body}
     </button>
+    </div>
   );
 }

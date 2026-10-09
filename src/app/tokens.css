@@ -5,38 +5,38 @@
 :root {
   color-scheme: light;
 
-  /* Поверхности: холодные, с низким свечением — панели читаются как карточки. */
-  --bg: #e9edf6;
-  --bg-glow: #f3f6fc;
+  /* Тёплые нейтральные поверхности. */
+  --bg: #f6f8fa;
+  --bg-glow: #ffffff;
   --panel: #fff;
-  --panel-soft: #f6f8fd;
-  --panel-sunken: #ecf1f9;
-  --grid-head: #eff4fc;
+  --panel-soft: #ffffff;
+  --panel-sunken: #edf1f5;
+  --grid-head: #ffffff;
 
   /* Текст: слейт вместо почти чёрного. */
-  --ink: #16203a;
-  --text: #38455f;
-  --muted: #5c6b85;
-  --faint: #93a0b6;
+  --ink: #25262b;
+  --text: #383940;
+  --muted: #5f6d78;
+  --faint: #83919d;
 
   /* Линии: структуру держат фоны, а не рамки. */
-  --line: #e0e6f1;
-  --line-soft: #edf1f8;
-  --line-strong: #c9d4e6;
+  --line: #dce3e9;
+  --line-soft: #edf1f5;
+  --line-strong: #c5d0df;
 
   /* Акцент интерфейса. */
-  --brand: #2f56d8;
-  --brand-ink: #2440ab;
-  --brand-soft: #e9eefd;
-  --brand-soft-strong: #dbe4fc;
-  --brand-line: #b7c7fa;
+  --brand: #335fc7;
+  --brand-ink: #24489e;
+  --brand-soft: #edf3ff;
+  --brand-soft-strong: #dce8ff;
+  --brand-line: #b7cdf7;
   --on-brand: #fff;
 
   /* Состояния: насыщенные в мелких деталях, спокойные в больших заливках. */
-  --ok: #0f9d58;
-  --ok-ink: #0a6b3c;
-  --ok-soft: #e4f7ec;
-  --ok-line: #a9e3c4;
+  --ok: #4273d4;
+  --ok-ink: #2853a6;
+  --ok-soft: #edf4ff;
+  --ok-line: #c3d7fa;
 
   --warn: #d98207;
   --warn-ink: #92560a;
@@ -49,12 +49,13 @@
   --bad-soft: #feeceb;
   --bad-line: #f8c9c5;
 
-  --focus: #2f56d8;
-  --ring: rgb(47 86 216 / 38%);
+  --focus: #356de0;
+  --ring: rgb(91 163 255 / 30%);
+  --focus-halo: 0 0 0 2px var(--focus), 0 0 0 5px var(--ring);
 
   /* Заливки слотов во время переноса. */
-  --drop-ok: #dcf4e6;
-  --drop-bad: #fde3e1;
+  --drop-ok: #edf4ff;
+  --drop-bad: #f5eeeb;
 
   /* Слои поверх интерфейса. */
   --veil: rgb(255 255 255 / 80%);
@@ -63,17 +64,17 @@
 
   /* Тени и внутренние обводки. */
   --shadow-hair: 0 1px 1px rgb(20 30 55 / 4%);
-  --shadow: 0 1px 2px rgb(20 30 55 / 5%), 0 10px 26px rgb(20 30 55 / 8%);
+  --shadow: 0 1px 3px rgb(35 35 25 / 3%);
   --shadow-md: 0 4px 12px rgb(20 30 55 / 10%), 0 16px 34px rgb(20 30 55 / 12%);
   --lift: 0 22px 48px rgb(20 30 55 / 22%), 0 3px 8px rgb(20 30 55 / 10%);
   --shadow-float: drop-shadow(0 16px 30px rgb(20 30 55 / 20%));
   --inset-hair: inset 0 0 0 1px rgb(20 30 55 / 3%);
 
   --r-xs: 6px;
-  --r-sm: 8px;
-  --r-md: 10px;
-  --r-lg: 14px;
-  --r-xl: 18px;
+  --r-sm: 12px;
+  --r-md: 16px;
+  --r-lg: 22px;
+  --r-xl: 24px;
 
   --h: 222;
 }
@@ -100,3 +101,8 @@
 [data-course='C_PHY150'] { --h: 14; }
 [data-course='C_HIS120'] { --h: 92; }
 [data-course='C_AI310'] { --h: 300; }
+
+[data-course] {
+  --course-surface: hsl(var(--h) 65% 91%);
+  --course-text: hsl(var(--h) 42% 23%);
+}

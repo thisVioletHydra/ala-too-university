@@ -10,6 +10,7 @@ import { useEffect, useEffectEvent, useLayoutEffect, useRef, useState } from 're
 type Zone = 'list' | 'grid';
 
 type HandInput = {
+  listHidden: boolean
   sections: { id: string }[]
   days: WeekDay[]
   slots: string[]
@@ -34,6 +35,7 @@ export function useHand(input: HandInput) {
   const [focusTick, setFocusTick] = useState(0);
   const keys = useRef(false);
   const seek = useRef(false);
+  const leftList = useRef(false);
   const hand = board.hold.hand;
 
   const list = input.sections.length === 0 ? 0 : Math.min(listIndex, input.sections.length - 1);
@@ -41,10 +43,11 @@ export function useHand(input: HandInput) {
   const slot = input.slots.length === 0 ? 0 : Math.min(cursor.slot, input.slots.length - 1);
 
   function publish(next: HandStep): void {
+    if (next.hand !== hand) leftList.current = false;
     const dayId = input.days[next.day];
     const slotId = input.slots[next.slot];
     const key = dayId && slotId ? slotKey(dayId, slotId) : '';
-    const returning = next.hand?.kind === 'lesson' && next.zone === 'list';
+    const returning = next.hand !== null && next.zone === 'list';
     setZone(next.zone);
     setListIndex(next.list);
     setCursor({ day: next.day, slot: next.slot });
@@ -64,8 +67,28 @@ export function useHand(input: HandInput) {
     const node = document.querySelector('[data-aim="yes"]');
     if (!(node instanceof HTMLElement)) return;
 
-    node.focus();
-    node.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    node.focus({ preventScroll: true });
+    const list = node.closest<HTMLElement>('[data-section-scroll]');
+    if (!list || !node.matches('[data-section-id]')) {
+      node.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+      return;
+    }
+
+    const previous = node.previousElementSibling;
+    const start = previous?.matches('[data-section-group]') ? previous : node;
+    const viewport = list.getBoundingClientRect();
+    const top = start.getBoundingClientRect().top;
+    const bottom = node.getBoundingClientRect().bottom;
+    const padding = 8;
+    let delta = 0;
+    if (bottom > viewport.bottom - padding) delta = bottom - viewport.bottom + padding;
+    if (top < viewport.top + padding) delta = top - viewport.top - padding;
+    if (delta !== 0) {
+      list.scrollTo({
+        top: list.scrollTop + delta,
+        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth',
+      });
+    }
   }, [focusTick]);
 
   useLayoutEffect(() => {
@@ -101,6 +124,8 @@ export function useHand(input: HandInput) {
     const place = zoneOf(event.target);
 
     if (event.key === 'Tab') {
+      if (input.listHidden) return;
+      if (!hand) return;
       const here = place ?? (hand ? zone : null);
       if (here === null || here === undefined) return;
 
@@ -163,7 +188,23 @@ export function useHand(input: HandInput) {
       return;
     }
 
-    if (event.key === 'Enter' && !hand && place === 'grid') {
+    if (event.key === 'Enter' && hand) {
+      event.preventDefault();
+      if (event.repeat) return;
+      if (hand.kind === 'lesson') {
+        board.setEditor({ mode: 'edit', lessonId: hand.lessonId });
+      } else {
+        const dayId = input.days[day];
+        const slotId = input.slots[slot];
+        if (!dayId || !slotId) return;
+        const advice = board.advice.get(slotKey(dayId, slotId));
+        board.setEditor({ mode: 'create', sectionId: hand.sectionId, day: dayId, timeSlotId: slotId, teacherId: advice?.teacherId ?? null, roomId: advice?.roomId ?? null, text: advice?.text ?? null });
+      }
+      publish({ zone, list, day, slot, hand: null, focus: false });
+      return;
+    }
+
+    if (event.key === 'Enter' && place === 'grid') {
       const lesson = lessonAt(input.lessons, input.days, input.slots, day, slot, event.target);
       if (lesson === null || lesson === undefined) return;
 
@@ -173,7 +214,7 @@ export function useHand(input: HandInput) {
       return;
     }
 
-    if (event.key !== ' ' && event.key !== 'Spacebar') return;
+    if (event.key !== ' ' && event.key !== 'Spacebar' && !(event.key === 'Enter' && place === 'list')) return;
 
     if (event.repeat) return;
 
@@ -233,7 +274,7 @@ export function useHand(input: HandInput) {
     const slotId = input.slots[slot];
     if (!dayId || !slotId) return;
 
-    if (hand.kind === 'lesson' && isHome(input.lessons, hand.lessonId, dayId, slotId)) {
+    if (hand.kind === 'lesson' && !event.shiftKey && isHome(input.lessons, hand.lessonId, dayId, slotId)) {
       publish({ zone: 'grid', list, day, slot, hand: null, focus: true });
 
       return;
@@ -272,6 +313,7 @@ export function useHand(input: HandInput) {
       });
     },
     enter: (next: Zone) => {
+      if (next === 'list' && hand?.kind === 'section' && !keys.current && !leftList.current) return;
       if (next === zone && armed) return;
 
       publish({ zone: next, list, day, slot, hand, focus: false });
@@ -283,12 +325,21 @@ export function useHand(input: HandInput) {
 
       publish({ zone: 'grid', list, day: dayIndex, slot: slotIndex, hand, focus: false });
     },
+    focusGrid: (dayIndex: number, slotIndex: number) => {
+      if (zone === 'grid' && day === dayIndex && slot === slotIndex && armed) return;
+      keys.current = true;
+      publish({ zone: 'grid', list, day: dayIndex, slot: slotIndex, hand, focus: false });
+    },
     pointList: () => {
-      if (keys.current || hand?.kind !== 'lesson' || board.ghost) return;
+      if (keys.current || !hand || board.ghost) return;
+      if (hand.kind === 'section' && !leftList.current) return;
 
       if (zone === 'list' && board.hold.overList) return;
 
       publish({ zone: 'list', list, day, slot, hand, focus: false });
+    },
+    leaveList: () => {
+      if (hand && !board.ghost) leftList.current = true;
     },
     dropAt: (dayIndex: number, slotIndex: number) => {
       if (!hand || board.ghost) return;
@@ -297,7 +348,7 @@ export function useHand(input: HandInput) {
       const slotId = input.slots[slotIndex];
       if (!dayId || !slotId) return;
 
-      if (hand.kind === 'lesson' && isHome(input.lessons, hand.lessonId, dayId, slotId)) {
+      if (hand.kind === 'lesson' && !board.repeat && isHome(input.lessons, hand.lessonId, dayId, slotId)) {
         publish({ zone: 'grid', list, day: dayIndex, slot: slotIndex, hand: null, focus: true });
 
         return;
@@ -325,7 +376,7 @@ function firstOpen(
       if (!item?.ok) continue;
 
       const occupied = lessons.some((lesson) => lesson.day === dayId && lesson.timeSlotId === slotId);
-      if (occupied === null || occupied === undefined) return { day, slot };
+      if (!occupied) return { day, slot };
 
       if (fallback === null || fallback === undefined) fallback = { day, slot };
     }
