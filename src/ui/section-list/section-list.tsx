@@ -1,8 +1,8 @@
-import { sectionRows } from '#features/section-groups.ts';
 import type { ListMode } from '#features/use-search.ts';
 import type { Lesson, Section, Teacher } from '#schedule/types.ts';
-import { Select } from '#ui/select/select.tsx';
 
+import { sectionRows } from '#features/section-groups.ts';
+import { Select } from '#ui/select/select.tsx';
 import { useDroppable } from '@dnd-kit/core';
 import { useBoard } from '#app/providers.tsx';
 import { SectionCard } from '#ui/section-card/section-card.tsx';

@@ -1,6 +1,5 @@
-import { sectionTeacher } from '#schedule/section-teacher.ts';
 import type { EditorRequest } from '#interaction/types.ts';
-import type { Lesson, ScheduleCatalog, WeekDay } from '#schedule/types.ts';
+import type { ScheduleCatalog, WeekDay } from '#schedule/types.ts';
 
 import { editLesson, placeFromEditor } from '#features/edit-lesson.ts';
 import { useBoard } from '#app/providers.tsx';
@@ -10,7 +9,9 @@ import { placementConflict } from '#schedule/conflicts.ts';
 import { pickRoom } from '#schedule/pick-room.ts';
 import { plural } from '#ui/plural.ts';
 import { Select } from '#ui/select/select.tsx';
-import { useEffect, useRef, useState } from 'react';
+import { draftOf } from '#ui/lesson-editor/editor-draft.ts';
+import { useEditorFocus } from '#ui/lesson-editor/editor-focus.ts';
+import { useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 import styles from '#ui/lesson-editor/lesson-editor.module.css';
@@ -31,52 +32,7 @@ type LessonEditorProps = {
 
 export function LessonEditor(props: LessonEditorProps) {
   const dialog = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const previous = document.activeElement;
-    const request = props.request;
-    const source = request.mode === 'edit'
-      ? useSchedule.getState().lessons.find((lesson) => lesson.id === request.lessonId)
-      : null;
-    const slot = previous instanceof Element ? previous.closest<HTMLElement>('[data-slot]') : null;
-    const fallback = slot ?? (source
-      ? document.querySelector<HTMLElement>(`[data-slot="${CSS.escape(`${source.day}|${source.timeSlotId}`)}"]`)
-      : null);
-    const root = dialog.current;
-    const controls = () => Array.from(root?.querySelectorAll<HTMLElement>('button:not(:disabled), select:not(:disabled), input:not(:disabled), [tabindex="0"]') ?? []);
-    const focusFrame = window.requestAnimationFrame(() => {
-      (root?.querySelector<HTMLElement>('[role="combobox"]') ?? controls()[0])?.focus({ preventScroll: true });
-    });
-    function trap(event: KeyboardEvent): void {
-      if (event.key !== 'Tab') return;
-
-      const items = controls();
-      const first = items[0];
-      const last = items[items.length - 1];
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-        last?.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first?.focus();
-      }
-    }
-
-    root?.addEventListener('keydown', trap);
-    return () => {
-      window.cancelAnimationFrame(focusFrame);
-      root?.removeEventListener('keydown', trap);
-      window.requestAnimationFrame(() => {
-        if (document.querySelector('[role="dialog"][aria-modal="true"]')) return;
-        const picker = document.querySelector<HTMLDialogElement>('dialog[data-slot-picker][open]');
-        if (picker) {
-          if (!picker.contains(document.activeElement)) picker.querySelector<HTMLElement>('[data-lesson-id], [data-close-picker]')?.focus();
-          return;
-        }
-        if (previous instanceof HTMLElement && previous.isConnected && !previous.closest('dialog:not([open])')) previous.focus();
-        else if (fallback?.isConnected) fallback.focus();
-      });
-    };
-  }, []);
+  useEditorFocus(dialog, props.request);
   const lessons = useSchedule((state) => state.lessons);
   const mark = useBoard().mark;
   const draft = draftOf(props.catalog, props.request, lessons);
@@ -84,7 +40,9 @@ export function LessonEditor(props: LessonEditorProps) {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [roomId, setRoomId] = useState(() => {
     if (draft.roomId) return draft.roomId;
+
     const initialSection = props.catalog.sections.find((item) => item.id === draft.sectionId);
+
     return initialSection ? pickRoom({
       section: initialSection,
       day: draft.day,
@@ -120,11 +78,17 @@ export function LessonEditor(props: LessonEditorProps) {
   function save(): void {
     if (sectionMode) {
       const saved = useSchedule.getState().assignSectionTeacher(draft.sectionId, teacherId);
-      if (!saved.ok) { setSaveError(saved.text); return; }
+      if (!saved.ok) { setSaveError(saved.text);
+
+        return;
+      }
+
       props.onClose();
+
       return;
     }
-    if (!roomId) return;
+
+    if (roomId === null || roomId === undefined) return;
 
     const before = new Set(useSchedule.getState().lessons.map((item) => item.id));
     const saved = draft.lessonId
@@ -136,7 +100,10 @@ export function LessonEditor(props: LessonEditorProps) {
         day: draft.day,
         timeSlotId: draft.timeSlotId,
       });
-    if (!saved.ok) { setSaveError(saved.text); return; }
+    if (!saved.ok) { setSaveError(saved.text);
+
+      return;
+    }
 
     const created = useSchedule.getState().lessons.find((item) => !before.has(item.id));
     mark({ lessonId: draft.lessonId ?? created?.id ?? null, sectionId: draft.sectionId });
@@ -161,9 +128,10 @@ export function LessonEditor(props: LessonEditorProps) {
         aria-modal="true"
         onKeyDown={(event) => {
           if (event.key !== 'Escape' || event.defaultPrevented) return;
+
           event.preventDefault();
           event.stopPropagation();
-          if (!event.repeat) props.onClose();
+          if (event.repeat === false) props.onClose();
         }}
         onKeyDownCapture={(event) => {
           const keyboardCheck = !['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key)
@@ -189,6 +157,7 @@ export function LessonEditor(props: LessonEditorProps) {
               controls.splice(closeIndex, 0, saveControl);
             }
           }
+
           const current = controls.indexOf(document.activeElement as HTMLElement);
           const direction = event.key === 'ArrowUp' || event.key === 'ArrowLeft' ? -1 : 1;
           event.preventDefault();
@@ -219,15 +188,17 @@ export function LessonEditor(props: LessonEditorProps) {
         </header>
         <div className={styles.title}>
           <h2 id="editor-title">{course?.name ?? section.code}</h2>
-          {!sectionMode ? <p className={styles.when}>{when}</p> : null}
+          {sectionMode ? null : <p className={styles.when}>{when}</p>}
         </div>
         <div className={styles.fields}>
           <label className={styles.field}>
             <span className={styles.teacherLabel}>
               <span className={styles.label}>Преподаватель</span>
-              {!teacherId ? <span className={styles.teacherNotice} role="status"><span className={styles.teacherWarning} aria-hidden="true">!</span>Нужен преподаватель</span> : null}
+              {teacherId ? null : <span className={styles.teacherNotice} role="status"><span className={styles.teacherWarning} aria-hidden="true">!</span>Нужен преподаватель</span>}
             </span>
-            <Select label="Преподаватель" value={teacherId} onChange={(value) => { setTeacherId(value); setSaveError(null); }} options={[{ value: '', label: 'Выберите преподавателя' }, ...section.allowedTeacherIds.map((id) => {
+            <Select label="Преподаватель" value={teacherId} onChange={(value) => { setTeacherId(value);
+              setSaveError(null);
+            }} options={[{ value: '', label: 'Выберите преподавателя' }, ...section.allowedTeacherIds.map((id) => {
               const teacher = props.catalog.teachers.find((item) => item.id === id);
               const advice = explainSlot({
                 section,
@@ -245,7 +216,7 @@ export function LessonEditor(props: LessonEditorProps) {
               return { value: id, label: teacher?.shortName ?? id, disabled: blocked, detail: blocked ? advice.text ?? undefined : undefined };
             })]} />
           </label>
-          {!sectionMode ? <label className={styles.field}>
+          {sectionMode ? null : <label className={styles.field}>
             <span className={styles.label}>Аудитория</span>
             <Select label="Аудитория" value={roomId} onChange={setRoomId} options={[{ value: '', label: 'Выберите аудиторию' }, ...props.catalog.rooms.map((room) => {
               const tooSmall = room.capacity < section.studentsCount;
@@ -274,7 +245,7 @@ export function LessonEditor(props: LessonEditorProps) {
                   : '';
               return { value: room.id, label: `${room.name} · ${room.capacity} мест`, disabled, detail: title || undefined };
             })]} />
-          </label> : null}
+          </label>}
         </div>
         <p className={styles.note} data-tone={reason ? 'bad' : 'calm'}>
           {reason ?? draft.text
@@ -288,6 +259,7 @@ export function LessonEditor(props: LessonEditorProps) {
         <div className={styles.actions}>
           {props.request.mode === 'edit' ? <button type="button" data-editor-delete className={styles.remove} onClick={() => {
             if (props.request.mode !== 'edit') return;
+
             useSchedule.getState().unassignLesson(props.request.lessonId);
             props.onClose();
           }}>Удалить</button> : <button type="button" data-editor-footer-close className={styles.ghost} onClick={props.onClose}>Закрыть</button>}
@@ -296,7 +268,7 @@ export function LessonEditor(props: LessonEditorProps) {
             className={styles.save}
             data-editor-save
             disabled={!result?.ok}
-            title={reason ?? (!roomId ? 'Выберите аудиторию' : '')}
+            title={reason ?? (roomId ? '' : 'Выберите аудиторию')}
             onClick={save}
           >
             Сохранить
@@ -306,50 +278,4 @@ export function LessonEditor(props: LessonEditorProps) {
     </div>,
     document.body,
   );
-}
-
-type EditorDraft = {
-  sectionId: string
-  day: WeekDay
-  timeSlotId: string
-  teacherId: string
-  roomId: string
-  lessonId?: string
-  excludeLessonId?: string
-  text: string | null
-};
-
-function draftOf(
-  catalog: ScheduleCatalog,
-  request: EditorRequest,
-  lessons: Lesson[],
-): EditorDraft {
-  if (request.mode === 'section') {
-    const section = catalog.sections.find((item) => item.id === request.sectionId);
-    return { sectionId: request.sectionId, day: 'MON', timeSlotId: '', roomId: '', teacherId: section ? sectionTeacher(section, lessons, useSchedule.getState().rememberedTeachers) ?? '' : '', text: null };
-  }
-  if (request.mode === 'create') {
-    return {
-      sectionId: request.sectionId,
-      day: request.day,
-      timeSlotId: request.timeSlotId,
-      teacherId: request.teacherId ?? '',
-      roomId: request.roomId ?? '',
-      text: request.text,
-    };
-  }
-
-  const lesson = lessons.find((item) => item.id === request.lessonId);
-  const section = catalog.sections.find((item) => item.id === lesson?.sectionId);
-
-  return {
-    sectionId: section?.id ?? '',
-    day: lesson?.day ?? 'MON',
-    timeSlotId: lesson?.timeSlotId ?? '',
-    teacherId: lesson?.teacherId ?? '',
-    roomId: lesson?.roomId ?? '',
-    lessonId: lesson?.id,
-    excludeLessonId: lesson?.id,
-    text: null,
-  };
 }

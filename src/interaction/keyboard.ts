@@ -34,6 +34,7 @@ export function hasCommandModifier(stroke: KeyStroke): boolean {
 
 export function detectPlatform(platform: string): Platform {
   if (/Mac|iPhone|iPad/i.test(platform)) return 'mac';
+
   return /Win/i.test(platform) ? 'windows' : 'other';
 }
 
@@ -42,10 +43,14 @@ export type GlobalCommand = 'undo' | 'redo' | 'focusSearch' | 'close';
 export function globalCommand(stroke: KeyStroke, platform: Platform): GlobalCommand | null {
   const primary = platform === 'mac' ? stroke.metaKey : stroke.ctrlKey;
   if (stroke.altKey) return null;
-  if (!primary) return matchesKey('cancel', stroke.key) ? 'close' : null;
+
+  if (primary === false) return matchesKey('cancel', stroke.key) ? 'close' : null;
+
   const key = stroke.key.toLowerCase();
   if (key === 'z') return stroke.shiftKey ? 'redo' : 'undo';
+
   if (key === 'y' && platform === 'windows') return 'redo';
+
   return key === 'k' ? 'focusSearch' : null;
 }
 

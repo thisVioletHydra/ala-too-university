@@ -55,13 +55,18 @@ export const useSchedule = create<ScheduleStore>((set, get) => ({
   },
   assignSectionTeacher: (sectionId, teacherId) => {
     const section = get().catalog?.sections.find((item) => item.id === sectionId);
-    if (!section) return missing();
+    if (section === null || section === undefined) return missing();
+
     if (teacherId && !section.allowedTeacherIds.includes(teacherId)) return { ok: false, kind: 'teacher-not-allowed', text: 'Преподаватель не ведёт эту секцию' };
+
     const next = get().lessons.map((item) => item.sectionId === sectionId ? { ...item, teacherId } : item);
     const result = checkSection(get, next, sectionId, teacherId);
     if (!result.ok) return result;
+
     if (next.some((item) => item.sectionId === sectionId)) commit(set, get, next);
+
     get().rememberTeacher(sectionId, teacherId);
+
     return { ok: true };
   },
   placeLesson: (placement) => {
@@ -96,6 +101,7 @@ export const useSchedule = create<ScheduleStore>((set, get) => ({
   },
   clearLessons: () => {
     if (get().lessons.length === 0) return;
+
     commit(set, get, []);
   },
   swapLessons: (firstId, secondId) => {
@@ -103,7 +109,9 @@ export const useSchedule = create<ScheduleStore>((set, get) => ({
     const first = lessons.findIndex((item) => item.id === firstId);
     const second = lessons.findIndex((item) => item.id === secondId);
     if (first < 0 || second < 0 || first === second) return;
+
     if (lessons[first].day !== lessons[second].day || lessons[first].timeSlotId !== lessons[second].timeSlotId) return;
+
     [lessons[first], lessons[second]] = [lessons[second], lessons[first]];
     commit(set, get, lessons);
   },
@@ -111,11 +119,11 @@ export const useSchedule = create<ScheduleStore>((set, get) => ({
     const current = get().lessons.find((item) => item.id === input.lessonId);
     if (current === null || current === undefined) return missing();
 
-    const next = get().lessons.map((item) => item.sectionId !== current.sectionId ? item : {
+    const next = get().lessons.map((item) => item.sectionId === current.sectionId ? {
       ...item,
       teacherId: input.teacherId,
       roomId: item.id === input.lessonId ? input.roomId : item.roomId,
-    });
+    } : item);
     const result = checkSection(get, next, current.sectionId);
     if (!result.ok) return result;
 
@@ -209,6 +217,7 @@ function missing(): ConflictResult {
 
 function checkSection(get: () => ScheduleStore, lessons: Lesson[], sectionId: string, assignedTeacherId?: string): ConflictResult {
   const catalog = get().catalog;
-  if (!catalog) return { ok: false, kind: 'no-room', text: 'Расписание ещё не загружено' };
+  if (catalog === null || catalog === undefined) return { ok: false, kind: 'no-room', text: 'Расписание ещё не загружено' };
+
   return sectionAssignmentConflict({ catalog, lessons, sectionId, teacherId: assignedTeacherId, rememberedTeachers: get().rememberedTeachers });
 }

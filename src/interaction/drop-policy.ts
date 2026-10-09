@@ -19,15 +19,20 @@ export function decideDrop(input: DropInput): DropDecision {
       ? { kind: 'return-section', sectionId: hand.sectionId }
       : { kind: 'remove', lessonId: hand.lessonId };
   }
+
   const originId = hand.kind === 'lesson' ? hand.lessonId : hand.originLessonId;
   const origin = lessons.find((lesson) => lesson.id === originId);
   const sameSlot = origin?.day === target.day && origin.timeSlotId === target.timeSlotId;
   if (sameSlot && !copyMode) return { kind: 'cancel' };
+
   const sectionId = hand.kind === 'section' ? hand.sectionId : origin?.sectionId;
-  if (!sectionId) return { kind: 'missing-source' };
+  if (sectionId === null || sectionId === undefined) return { kind: 'missing-source' };
+
   const matching = lessons.find((lesson) => lesson.sectionId === sectionId && lesson.day === target.day && lesson.timeSlotId === target.timeSlotId);
   if (copyMode && matching) return { kind: 'remove', lessonId: matching.id };
+
   if (hand.kind === 'section') return { kind: 'assign', sectionId };
+
   return copyMode
     ? { kind: 'copy', lessonId: hand.lessonId, sectionId }
     : { kind: 'move', lessonId: hand.lessonId };

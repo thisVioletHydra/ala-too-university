@@ -28,20 +28,28 @@ export function sidebarDestination(input: SidebarInput): SidebarDestination {
       ArrowUp: { kind: 'status', index: input.selectedStatus },
       ArrowDown: input.cardCount > 0 ? { kind: 'card', index: 0 } : { kind: 'unhandled' },
     };
+
     return directions[key] ?? { kind: 'unhandled' };
   }
+
   if (target.kind === 'status') {
     if (key === 'ArrowDown') return { kind: 'search' };
+
     const direction = horizontalDirection[key] ?? 0;
+
     return direction ? { kind: 'status', index: bounded(target.index + direction, input.statusCount) } : { kind: 'stay' };
   }
+
   if (target.kind === 'issue') {
     if (key === 'ArrowUp' && target.index === 0) {
       return input.cardCount > 0 ? { kind: 'card', index: input.cardCount - 1 } : { kind: 'search' };
     }
+
     const direction = verticalDirection[key] ?? 0;
+
     return direction ? { kind: 'issue', index: bounded(target.index + direction, input.issueCount) } : { kind: 'stay' };
   }
+
   return { kind: 'unhandled' };
 }
 

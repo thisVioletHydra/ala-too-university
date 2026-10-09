@@ -19,8 +19,10 @@ export function readStoredSchedule(): StoredSchedule | null {
     const empty: StoredSchedule = { dataset: 'mock', lessons: [], past: [], future: [] };
     writeStoredSchedule(empty);
     localStorage.setItem('ala-too-section-teacher-v2', 'ready');
+
     return empty;
   }
+
   if (raw === null) return null;
 
   try {

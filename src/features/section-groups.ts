@@ -22,11 +22,13 @@ export function sectionRows(input: GroupInput): SectionRow[] {
   function groupKey(section: Section): string {
     return input.groupBy === 'course' ? section.courseId : input.teacherName(section) ?? 'unassigned';
   }
+
   const teacherCounts = new Map<string, Set<string>>();
   for (const section of input.sections) {
     const names = teacherCounts.get(section.courseId) ?? new Set<string>();
     const teacher = input.teacherName(section);
     if (teacher) names.add(teacher);
+
     teacherCounts.set(section.courseId, names);
   }
   return input.sections.map((section, index) => {

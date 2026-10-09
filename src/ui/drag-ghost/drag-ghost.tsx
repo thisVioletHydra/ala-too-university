@@ -1,26 +1,23 @@
-import { resolveCursorState, ownsAnimation } from '#interaction/cursor-state.ts';
 import type { CursorState } from '#interaction/cursor-state.ts';
-import { acceptsPointer } from '#interaction/input-policy.ts';
-import { isInteractionKey } from '#interaction/keyboard.ts';
-import type { Lesson, ScheduleCatalog } from '#schedule/types.ts';
-import type { ActiveDrag, Hand, Landing } from '#interaction/types.ts';
+import type { ScheduleCatalog } from '#schedule/types.ts';
 import type { ReactNode } from 'react';
 import type { DropAnimation } from '@dnd-kit/core';
 
+import { resolveCursorState, ownsAnimation } from '#interaction/cursor-state.ts';
+import { acceptsPointer } from '#interaction/input-policy.ts';
+import { isInteractionKey } from '#interaction/keyboard.ts';
+import { cannotFly, heldDrag, insetBox, isOverSidebar, landingBox, placeAim, placeAt, sourceNode } from '#ui/drag-ghost/ghost-geometry.ts';
 import { DragOverlay } from '@dnd-kit/core';
-import { slotKey, useBoard } from '#app/providers.tsx';
+import { heldCard } from '#ui/drag-ghost/held-card.tsx';
+import { useBoard } from '#app/providers.tsx';
 import { useSchedule } from '#app/schedule.store.ts';
-import { LessonPreview } from '#ui/lesson-card/lesson-card.tsx';
 import { useEffect, useEffectEvent, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal, flushSync } from 'react-dom';
 
 import styles from '#ui/drag-ghost/drag-ghost.module.css';
 
 const dropAnimation: DropAnimation = ({ active, dragOverlay }) => {
-  const sidebar = document.getElementById('sections-panel')?.getBoundingClientRect();
-  const x = dragOverlay.rect.left + dragOverlay.rect.width / 2;
-  const y = dragOverlay.rect.top + dragOverlay.rect.height / 2;
-  if (active.data.current?.kind === 'section' && sidebar && x >= sidebar.left && x <= sidebar.right && y >= sidebar.top && y <= sidebar.bottom) return;
+  if (isOverSidebar(dragOverlay.rect, active.data.current?.kind)) return;
 
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
@@ -114,15 +111,19 @@ export function HandCursor(props: { catalog: ScheduleCatalog }) {
     if (next.phase === 'paused') {
       return;
     }
+
     if (hand) {
 
       snapshot.current = card;
       if (board.landing) complete();
-      if (!el) return;
+
+      if (el === null || el === undefined) return;
+
       const source = sourceNode(hand)?.getBoundingClientRect();
       const cell = document.querySelector('[data-slot]');
       const width = hand.kind === 'section' && cell instanceof HTMLElement ? insetBox(cell).width : source?.width;
       if (width) el.style.inlineSize = `${width}px`;
+
       el.style.visibility = 'visible';
       el.style.opacity = '1';
       el.style.scale = '1';
@@ -130,19 +131,25 @@ export function HandCursor(props: { catalog: ScheduleCatalog }) {
       if (input.current === 'keyboard') placeAim(el);
       else if (pointer.current) placeAt(el, pointer.current.x, pointer.current.y);
       else if (source) el.style.transform = `translate(${source.left}px, ${source.top}px)`;
+
       return;
     }
+
     const landing = board.landing;
-    if (!landing) {
+    if (landing === null || landing === undefined) {
       snapshot.current = null;
+
       return;
     }
+
     const returning = landing.kind === 'tray';
     const target = returning ? null : landingBox(landing);
-    if (!el || (!returning && !target) || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    if (el === null || cannotFly(returning, target)) {
       complete();
+
       return;
     }
+
     // Один владелец анимации: движение указателя и старые callbacks не могут
     // изменить превью, пока машина находится в placing / returning.
     const start = getComputedStyle(el).transform;
@@ -157,9 +164,11 @@ export function HandCursor(props: { catalog: ScheduleCatalog }) {
     });
     animation.onfinish = () => {
       const state = cursor.current;
-      if (!ownsAnimation(state, token)) return;
+      if (ownsAnimation(state, token) === null || ownsAnimation(state, token) === undefined) return;
+
       flushSync(() => complete());
     };
+
     return () => {
       animation.onfinish = null;
       animation.cancel();
@@ -169,26 +178,36 @@ export function HandCursor(props: { catalog: ScheduleCatalog }) {
   useEffect(() => {
     function point(event: PointerEvent): void {
       const pointerAllowed = acceptsPointer(input.current, {
-        primary: event.isPrimary, eventType: event.type, x: event.clientX, y: event.clientY,
-        movementX: event.movementX, movementY: event.movementY,
+        primary: event.isPrimary,
+        eventType: event.type,
+        x: event.clientX,
+        y: event.clientY,
+        movementX: event.movementX,
+        movementY: event.movementY,
       });
-      if (!pointerAllowed) return;
+      if (pointerAllowed === false) return;
+
       pointer.current = { x: event.clientX, y: event.clientY };
       input.current = 'pointer';
       document.body.dataset.cardInput = 'pointer';
       if (cursor.current.phase !== 'holding') return;
+
       cursor.current = { phase: 'holding', input: 'pointer' };
       const el = node.current;
-      if (!el) return;
+      if (el === null || el === undefined) return;
+
       el.style.transition = 'none';
       placeAt(el, event.clientX, event.clientY);
     }
+
     function key(event: KeyboardEvent): void {
       if (!isInteractionKey(event.key)) return;
+
       input.current = 'keyboard';
       document.body.dataset.cardInput = 'keyboard';
       if (cursor.current.phase === 'holding') cursor.current = { phase: 'holding', input: 'keyboard' };
     }
+
     window.addEventListener('pointermove', point);
     window.addEventListener('pointerdown', point);
     window.addEventListener('keydown', key, true);
@@ -206,133 +225,7 @@ export function HandCursor(props: { catalog: ScheduleCatalog }) {
   }, [hand, board.editor]);
 
   const shown = board.editor ? null : card ?? (board.landing ? snapshot.current : null);
-  if (!shown) return null;
+  if (shown === null || shown === undefined) return null;
+
   return createPortal(<div ref={node} className={styles.float}>{shown}</div>, document.body);
-}
-
-function landingBox(landing: Landing): { left: number, top: number, width: number } | null {
-  if (landing.kind === 'card') {
-    const node = document.querySelector(`[data-lesson-id="${CSS.escape(landing.lessonId)}"]`);
-
-    return node instanceof HTMLElement ? plainBox(node) : null;
-  }
-
-  if (landing.kind === 'slot') {
-    const node = document.querySelector(`[data-slot="${CSS.escape(slotKey(landing.day, landing.timeSlotId))}"]`);
-
-    return node instanceof HTMLElement ? insetBox(node) : null;
-  }
-
-  const tray = document.querySelector('[data-tray]');
-
-  return tray instanceof HTMLElement ? plainBox(tray) : null;
-}
-
-function plainBox(node: HTMLElement): { left: number, top: number, width: number } {
-  const rect = node.getBoundingClientRect();
-  return { left: rect.left, top: rect.top, width: rect.width };
-}
-
-function insetBox(node: HTMLElement): { left: number, top: number, width: number } {
-  const rect = node.getBoundingClientRect();
-  const style = getComputedStyle(node);
-  const padStart = Number.parseFloat(style.paddingInlineStart);
-  const padEnd = Number.parseFloat(style.paddingInlineEnd);
-  const padTop = Number.parseFloat(style.paddingBlockStart);
-
-  return {
-    left: rect.left + padStart,
-    top: rect.top + padTop,
-    width: rect.width - padStart - padEnd,
-  };
-}
-
-function placeAt(element: HTMLElement, x: number, y: number): void {
-  placeWithinViewport(element, x + 16, y - 16);
-}
-
-function placeAim(element: HTMLElement): void {
-  const aim = document.querySelector('[data-aim="yes"]');
-  if (!(aim instanceof HTMLElement)) return;
-
-  const rect = aim.getBoundingClientRect();
-  if (aim.matches('[data-section-scroll]')) {
-    const top = Math.max(8, rect.top);
-    const bottom = Math.min(window.innerHeight - 8, rect.bottom);
-    placeWithinViewport(element, rect.left + (rect.width - element.offsetWidth) / 2, top + (bottom - top) / 2 + 24);
-
-    return;
-  }
-
-  placeWithinViewport(element, rect.right - element.offsetWidth * 0.4, rect.bottom - 24);
-}
-
-function placeWithinViewport(element: HTMLElement, left: number, top: number): void {
-  const x = Math.max(8, Math.min(left, window.innerWidth - element.offsetWidth - 8));
-  const y = Math.max(8, Math.min(top, window.innerHeight - element.offsetHeight - 8));
-  element.style.transform = `translate(${x}px, ${y}px)`;
-}
-
-function heldDrag(hand: Hand): ActiveDrag {
-  if (hand.kind === 'section') return { ...hand };
-
-  return { kind: 'lesson', lessonId: hand.lessonId, copy: false };
-}
-
-function sourceNode(hand: Hand): HTMLElement | null {
-  const selector = hand.kind === 'lesson'
-    ? `[data-lesson-id="${CSS.escape(hand.lessonId)}"]`
-    : `[data-section-id="${CSS.escape(hand.sectionId)}"]`;
-  const node = document.querySelector(selector);
-  return node instanceof HTMLElement ? node : null;
-}
-
-function heldCard(
-  catalog: ScheduleCatalog,
-  lessons: Lesson[],
-  remembered: Record<string, string>,
-  drag: ActiveDrag,
-) {
-  if (drag.kind === 'section') {
-    const section = catalog.sections.find((item) => item.id === drag.sectionId);
-    if (section === null || section === undefined) return null;
-
-    const course = catalog.courses.find((item) => item.id === section.courseId);
-    const teacherId = drag.teacherId ?? section.teacherId ?? remembered[section.id];
-    const room = catalog.rooms.find((item) => item.id === drag.roomId);
-    const teacher = catalog.teachers.find((item) => item.id === teacherId);
-
-    return (
-      <LessonPreview
-        courseId={section.courseId}
-        courseName={course?.name ?? section.code}
-        courseCode={course?.code ?? section.code}
-        code={section.code}
-        teacherName={teacher?.shortName ?? 'Выбор преподавателя'}
-        roomName={room?.name ?? 'Не выбрана'}
-        roomType={room?.type ?? section.preferredRoomType}
-        preferredRoomType={section.preferredRoomType}
-      />
-    );
-  }
-
-  const lesson = lessons.find((item) => item.id === drag.lessonId);
-  const section = catalog.sections.find((item) => item.id === lesson?.sectionId);
-  const teacher = catalog.teachers.find((item) => item.id === lesson?.teacherId);
-  const room = catalog.rooms.find((item) => item.id === lesson?.roomId);
-  const course = catalog.courses.find((item) => item.id === section?.courseId);
-  if (!lesson || !section || !room) return null;
-
-  return (
-    <LessonPreview
-      courseId={section.courseId}
-      courseCode={course?.code ?? section.code}
-      courseName={course?.name ?? section.code}
-      code={section.code}
-      teacherName={teacher?.shortName ?? 'Нужен преподаватель'}
-      roomName={room.name}
-      roomType={room.type}
-      preferredRoomType={section.preferredRoomType}
-    />
-  );
 }

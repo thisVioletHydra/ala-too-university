@@ -1,5 +1,6 @@
 import type { Lesson, Section } from '#schedule/types.ts';
 import type { ListMode } from '#schedule/section-selection.ts';
+
 import { selectSections } from '#schedule/section-selection.ts';
 import { useMemo, useState } from 'react';
 
@@ -15,18 +16,31 @@ export function useSearch(sections: Section[], lessons: Lesson[], courseName: (s
 
   const matched = useMemo(() => {
     const needle = query.trim().toLowerCase();
-    if (!needle) return sections;
+    if (needle.length === 0) return sections;
+
     function matchesQuery(section: Section): boolean {
       const name = courseName(section).toLowerCase();
       return section.code.toLowerCase().includes(needle) || name.includes(needle);
     }
+
     return sections.filter(matchesQuery);
   }, [sections, query, courseName]);
 
   const selection = selectSections({ sections: matched, lessons, remembered, mode, groupBy, teacherId: sectionTeacherId });
   return {
-    groupBy, setGroupBy, sectionTeacherId, setSectionTeacherId,
-    query, setQuery, teacherId, setTeacherId, roomId, setRoomId,
-    counts: selection.counts, mode, setMode, visible: selection.visible,
+    groupBy,
+    setGroupBy,
+    sectionTeacherId,
+    setSectionTeacherId,
+    query,
+    setQuery,
+    teacherId,
+    setTeacherId,
+    roomId,
+    setRoomId,
+    counts: selection.counts,
+    mode,
+    setMode,
+    visible: selection.visible,
   };
 }

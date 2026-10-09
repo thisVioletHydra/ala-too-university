@@ -50,3 +50,6 @@ export type Flash = {
   sectionId: string | null
 };
 
+export const emptyHold: Hold = { hand: null, aim: '', overKey: null, overList: false };
+
+export const quietFlash: Flash = { lessonId: null, sectionId: null };

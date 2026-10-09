@@ -24,7 +24,7 @@ export function sectionAssignmentConflict(input: AssignmentInput): ConflictResul
 
   const teacherId = input.teacherId ?? sectionTeacher(section, lessons, rememberedTeachers);
   const teacherAllowed = !teacherId || section.allowedTeacherIds.includes(teacherId);
-  if (teacherAllowed === null || teacherAllowed === undefined)
+  if (teacherAllowed === false)
     return {
       ok: false,
       kind: 'teacher-not-allowed',

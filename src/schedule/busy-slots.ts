@@ -25,6 +25,7 @@ export function busySlots(
     if (lesson.id === excludeLessonId) continue;
 
     if (lesson.teacherId) teacherAt.set(slotKey(lesson.teacherId, lesson.day, lesson.timeSlotId), lesson.id);
+
     roomAt.set(slotKey(lesson.roomId, lesson.day, lesson.timeSlotId), lesson.id);
     sectionAt.set(slotKey(lesson.sectionId, lesson.day, lesson.timeSlotId), lesson.id);
   }

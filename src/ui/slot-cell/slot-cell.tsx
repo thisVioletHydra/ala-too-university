@@ -57,7 +57,7 @@ export function SlotCell(props: SlotCellProps) {
       tabIndex={props.tabStop ? 0 : -1}
       onPointerOver={props.onPoint}
       onFocus={(event) => {
-        if (!event.target.matches(':focus-visible')) return;
+        if (event.target.matches(':focus-visible') === false) return;
 
         event.stopPropagation();
         props.onFocus();

@@ -19,5 +19,6 @@ export function pickerReturnAfter(_state: PickerReturn, event: PickerReturnEvent
 
 export function pickerReturnLesson(state: PickerReturn, lessonIds: string[]): string | null {
   if (state.kind === 'none') return null;
+
   return lessonIds.includes(state.lessonId) ? state.lessonId : null;
 }

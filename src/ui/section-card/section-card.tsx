@@ -141,7 +141,9 @@ function SectionFace(props: SectionFaceProps) {
     >
       <span className={styles.rail} aria-hidden="true" />
       <div className={styles.head}>
-        {!props.overlay && props.dragging ? <button type="button" className={styles.editSection} aria-label={`Редактировать секцию ${props.section.code}`} title="Редактировать секцию" onPointerDown={(event) => event.stopPropagation()} onClick={(event) => { event.stopPropagation(); board.setEditor({ mode: 'section', sectionId: props.section.id }); }}><svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.4" aria-hidden="true"><path d="m3 10 7-7 3 3-7 7-4 1 1-4ZM9 4l3 3" /></svg></button> : null}
+        {!props.overlay && props.dragging ? <button type="button" className={styles.editSection} aria-label={`Редактировать секцию ${props.section.code}`} title="Редактировать секцию" onPointerDown={(event) => event.stopPropagation()} onClick={(event) => { event.stopPropagation();
+          board.setEditor({ mode: 'section', sectionId: props.section.id });
+        }}><svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.4" aria-hidden="true"><path d="m3 10 7-7 3 3-7 7-4 1 1-4ZM9 4l3 3" /></svg></button> : null}
         <span className={styles.teacher} data-missing={props.teacherName === null ? 'yes' : 'no'}>{props.teacherName === null ? <span className={styles.teacherWarning} aria-hidden="true">!</span> : null}{props.teacherName ?? 'Нужен преподаватель'}</span>
         <span className={styles.chip}>{props.courseCode}</span>
         <span className={styles.no}>{sectionNo(props.courseCode, props.section.code)}</span>

@@ -1,6 +1,6 @@
-import { keyboardHints } from '#interaction/keyboard.ts';
 import type { Dataset } from '#app/schedule.store.ts';
 
+import { keyboardHints } from '#interaction/keyboard.ts';
 import { useBoard } from '#app/providers.tsx';
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
@@ -16,6 +16,7 @@ export function WorkspaceSettings(props: { dataset: Dataset; onDataset: (dataset
     function syncPicker(): void {
       setPickerOpen(Boolean(document.querySelector('dialog[data-slot-picker][open]')));
     }
+
     document.addEventListener('toggle', syncPicker, true);
     document.addEventListener('focusin', syncPicker);
     return () => {
@@ -32,10 +33,12 @@ export function WorkspaceSettings(props: { dataset: Dataset; onDataset: (dataset
         setKeyboard(true);
       }
     }
+
     function onPointer(): void {
       clearTimeout(hideTimer);
       hideTimer = setTimeout(() => setKeyboard(false), 800);
     }
+
     window.addEventListener('keydown', onKey, true);
     window.addEventListener('pointerdown', onPointer);
     window.addEventListener('pointermove', onPointer);
@@ -60,8 +63,13 @@ export function WorkspaceSettings(props: { dataset: Dataset; onDataset: (dataset
     </button>
     <div id="workspace-settings" className="settings-popover" popover="auto" aria-labelledby="settings-title" onToggle={(event) => setSettingsOpen(event.newState === 'open')}>
       <header><h2 id="settings-title">Настройки</h2><button type="button" popoverTarget="workspace-settings" popoverTargetAction="hide" aria-label="Закрыть настройки">×</button></header>
-      <label className="settings-row"><span><strong>Клавиатурные подсказки</strong><small>Появляются в шапке при работе с клавиатурой</small></span><input type="checkbox" role="switch" checked={hints} onChange={(event) => { setHints(event.target.checked); localStorage.setItem('schedule-keyboard-hints', event.target.checked ? 'on' : 'off'); }} /></label>
-      <label className="settings-row"><span><strong>500 секций</strong><small>Выключено — базовый набор моков. Переключение сбрасывает расписание.</small></span><input type="checkbox" role="switch" checked={props.dataset === 'bulk'} onChange={(event) => { board.setEditor(null); board.setHold({ hand: null, aim: '', overKey: null, overList: false }); props.onDataset(event.target.checked ? 'bulk' : 'mock'); }} /></label>
+      <label className="settings-row"><span><strong>Клавиатурные подсказки</strong><small>Появляются в шапке при работе с клавиатурой</small></span><input type="checkbox" role="switch" checked={hints} onChange={(event) => { setHints(event.target.checked);
+        localStorage.setItem('schedule-keyboard-hints', event.target.checked ? 'on' : 'off');
+      }} /></label>
+      <label className="settings-row"><span><strong>500 секций</strong><small>Выключено — базовый набор моков. Переключение сбрасывает расписание.</small></span><input type="checkbox" role="switch" checked={props.dataset === 'bulk'} onChange={(event) => { board.setEditor(null);
+        board.setHold({ hand: null, aim: '', overKey: null, overList: false });
+        props.onDataset(event.target.checked ? 'bulk' : 'mock');
+      }} /></label>
     </div>
     {hints && keyboard && hintsSlot ? createPortal(<div className="keyboard-hints" aria-label="Клавиатурные подсказки">{shortcuts.map(([key, text]) => <span key={key}><kbd>{key}</kbd>{text}</span>)}</div>, hintsSlot) : null}
   </>;

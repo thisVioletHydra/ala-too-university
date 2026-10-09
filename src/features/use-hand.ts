@@ -1,34 +1,10 @@
-import { navigateSidebar } from '#accessible/sidebar-navigation.ts';
-import { hasCommandModifier, matchesKey } from '#interaction/keyboard.ts';
-import { navigationPermissions } from '#interaction/input-policy.ts';
-import type { SlotAdvice } from '#schedule/conflicts.ts';
-import type { Lesson, WeekDay } from '#schedule/types.ts';
-import type { Hand } from '#interaction/types.ts';
+import type { HandInput, HandStep, Zone } from '#features/hand-types.ts';
 
-import { keyboardGrid } from '#accessible/keyboard-grid.ts';
-import { keyboardSlot } from '#accessible/keyboard-slot.ts';
-import { unassignLesson } from '#features/unassign-lesson.ts';
+import { firstOpen, isHome } from '#features/hand-targets.ts';
+import { handleHandKey } from '#features/hand-keyboard.ts';
 import { slotKey, useBoard } from '#app/providers.tsx';
+import { useAimFocus } from '#features/hand-focus.ts';
 import { useEffect, useEffectEvent, useLayoutEffect, useRef, useState } from 'react';
-
-type Zone = 'list' | 'grid';
-
-type HandInput = {
-  listHidden: boolean
-  sections: { id: string }[]
-  days: WeekDay[]
-  slots: string[]
-  lessons: Lesson[]
-};
-
-type HandStep = {
-  zone: Zone
-  list: number
-  day: number
-  slot: number
-  hand: Hand | null
-  focus: boolean
-};
 
 export function useHand(input: HandInput) {
   const board = useBoard();
@@ -45,6 +21,16 @@ export function useHand(input: HandInput) {
   const list = input.sections.length === 0 ? 0 : Math.min(listIndex, input.sections.length - 1);
   const day = input.days.length === 0 ? 0 : Math.min(cursor.day, input.days.length - 1);
   const slot = input.slots.length === 0 ? 0 : Math.min(cursor.slot, input.slots.length - 1);
+
+  /** Секция без клавиатуры не должна сама ронять список в «область». */
+  function keepOffList(next: Zone): boolean {
+    return next === 'list' && hand?.kind === 'section' && !keys.current && !leftList.current;
+  }
+
+  /** Курсор уже стоит в этой клетке и уже вооружён — повторный переход не нужен. */
+  function alreadyAimed(dayIndex: number, slotIndex: number): boolean {
+    return zone === 'grid' && day === dayIndex && slot === slotIndex && armed;
+  }
 
   function publish(next: HandStep): void {
     if (next.hand !== hand) leftList.current = false;
@@ -66,38 +52,6 @@ export function useHand(input: HandInput) {
     if (next.focus) setFocusTick((tick) => tick + 1);
   }
 
-  useEffect(() => {
-    if (focusTick === 0) return;
-
-    const node = document.querySelector('[data-aim="yes"]');
-    if (!(node instanceof HTMLElement)) return;
-
-    node.focus({ preventScroll: true });
-    const list = node.closest<HTMLElement>('[data-section-scroll]');
-    if (!list || !node.matches('[data-section-id]')) {
-      node.scrollIntoView({ block: 'nearest', inline: 'nearest' });
-
-      return;
-    }
-
-    const previous = node.previousElementSibling;
-    const start = previous?.matches('[data-section-group]') ? previous : node;
-    const viewport = list.getBoundingClientRect();
-    const top = start.getBoundingClientRect().top;
-    const bottom = node.getBoundingClientRect().bottom;
-    const padding = 8;
-    let delta = 0;
-    if (bottom > viewport.bottom - padding) delta = bottom - viewport.bottom + padding;
-
-    if (top < viewport.top + padding) delta = top - viewport.top - padding;
-
-    if (delta !== 0) {
-      list.scrollTo({
-        top: list.scrollTop + delta,
-        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth',
-      });
-    }
-  }, [focusTick]);
 
   useLayoutEffect(() => {
     if (!seek.current || hand === null || zone !== 'grid') return;
@@ -124,236 +78,10 @@ export function useHand(input: HandInput) {
     };
   }, []);
 
+  useAimFocus(focusTick);
+
   const onKeyDown = useEffectEvent((event: KeyboardEvent) => {
-    if (event.defaultPrevented) return;
-    if (hasCommandModifier(event)) return;
-    const permissions = navigationPermissions({
-      composing: event.isComposing, shiftPressed: event.shiftKey,
-      sidebarHidden: input.listHidden, carrying: hand !== null,
-      dragging: board.ghost !== null, editing: board.editor !== null,
-      landing: board.landing !== null, repeated: event.repeat,
-    });
-
-    const sidebarArrow = isArrow(event.key) && permissions.sidebar;
-    if (sidebarArrow && event.target instanceof HTMLElement) {
-      const destination = navigateSidebar(event.target, event.key, input.sections.length);
-      if (destination.kind !== 'unhandled') {
-        event.preventDefault();
-        if (destination.kind === 'card') {
-          keys.current = true;
-          publish({ zone: 'list', list: destination.index, day, slot, hand: null, focus: true });
-        }
-        return;
-      }
-    }
-
-    if (typing(event.target)) return;
-
-    const place = zoneOf(event.target);
-
-    if (isArrow(event.key) && place === null) {
-      if (!permissions.recoverFocus) return;
-      if (document.querySelector('dialog[open], [role="dialog"], [role="listbox"], [popover]:popover-open')) return;
-      const target = event.target;
-      if (target instanceof Element && target.closest('button, a[href], input, textarea, select, [contenteditable], [tabindex], [role="button"], [role="combobox"], [role="menu"], [role="slider"], [role="spinbutton"], [role="tablist"]')) return;
-      const first = document.querySelector<HTMLElement>('[data-section-scroll] [data-section-id]');
-      if (!first || first.closest('[inert], [hidden]') || first.getClientRects().length === 0) return;
-      event.preventDefault();
-      keys.current = true;
-      publish({ zone: 'list', list: 0, day, slot, hand: null, focus: true });
-      return;
-    }
-
-    if (matchesKey('switchArea', event.key)) {
-      if (input.listHidden) return;
-
-      const here = place ?? (hand ? zone : null);
-      if (here === null || here === undefined) return;
-
-      event.preventDefault();
-      keys.current = true;
-      const nextZone = here === 'list' ? 'grid' : 'list';
-      const land = nextZone === 'grid' && hand !== null;
-      if (land) seek.current = true;
-
-      publish({
-        zone: nextZone,
-        list,
-        day,
-        slot,
-        hand,
-        focus: !land,
-      });
-
-      return;
-    }
-
-    if (matchesKey('cancel', event.key) && hand) {
-      event.preventDefault();
-      keys.current = true;
-      seek.current = false;
-      const fromList = hand.kind === 'section' && !hand.originLessonId && !input.listHidden;
-      const sectionId = hand.kind === 'section' ? hand.sectionId : null;
-      const sourceIndex = fromList ? input.sections.findIndex((section) => section.id === sectionId) : -1;
-      publish({ zone: fromList ? 'list' : zone, list: sourceIndex >= 0 ? sourceIndex : list, day, slot, hand: null, focus: true });
-      window.dispatchEvent(new Event('schedule:cancel-hand'));
-
-      return;
-    }
-
-    if (matchesKey('remove', event.key) && hand?.kind === 'lesson') {
-      if (event.repeat) return;
-
-      event.preventDefault();
-      board.dropHand(hand, { kind: 'unassign' });
-
-      return;
-    }
-
-    if (matchesKey('remove', event.key) && place === 'grid' && !hand) {
-      event.preventDefault();
-      if (event.repeat || board.ghost) return;
-      const cell = event.target instanceof Element ? event.target.closest('[data-slot]') : null;
-      const key = cell?.getAttribute('data-slot');
-      if (!key) return;
-      const items = input.lessons.filter((lesson) => slotKey(lesson.day, lesson.timeSlotId) === key);
-      if (items.length !== 1) return;
-      unassignLesson(items[0].id);
-      return;
-    }
-
-    if (place === null || place === undefined) return;
-
-    if (isArrow(event.key)) {
-      event.preventDefault();
-      keys.current = true;
-      if (place === 'list') {
-        if (event.key === 'ArrowDown' && list === input.sections.length - 1 && !hand) {
-          const issue = document.querySelector<HTMLButtonElement>('#sections-panel footer button');
-          if (issue) {
-            issue.focus();
-            return;
-          }
-        }
-        if (event.key === 'ArrowUp' && list === 0 && !hand) {
-          document.getElementById('section-search')?.focus();
-          return;
-        }
-        publish({
-          zone: 'list',
-          list: keyboardSlot(list, event.key, input.sections.length),
-          day,
-          slot,
-          hand,
-          focus: true,
-        });
-
-        return;
-      }
-
-      const next = keyboardGrid({ day, slot }, event.key, input.days.length, input.slots.length);
-      publish({ zone: 'grid', list, day: next.day, slot: next.slot, hand, focus: true });
-
-      return;
-    }
-
-    if (matchesKey('edit', event.key) && hand) {
-      event.preventDefault();
-      if (event.repeat) return;
-
-      if (hand.kind === 'lesson') {
-        board.setEditor({ mode: 'edit', lessonId: hand.lessonId });
-      } else {
-        const dayId = input.days[day];
-        const slotId = input.slots[slot];
-        if (!dayId || !slotId) return;
-
-        const advice = board.advice.get(slotKey(dayId, slotId));
-        board.setEditor({ mode: 'create', sectionId: hand.sectionId, day: dayId, timeSlotId: slotId, teacherId: advice?.teacherId ?? null, roomId: advice?.roomId ?? null, text: advice?.text ?? null });
-      }
-
-      publish({ zone, list, day, slot, hand: null, focus: false });
-
-      return;
-    }
-
-    if (matchesKey('edit', event.key) && place === 'grid') {
-      const lesson = lessonAt(input.lessons, input.days, input.slots, day, slot, event.target);
-      if (lesson === null || lesson === undefined) return;
-
-      event.preventDefault();
-      board.setEditor({ mode: 'edit', lessonId: lesson.id });
-
-      return;
-    }
-
-    if (!matchesKey('place', event.key) && !(matchesKey('edit', event.key) && place === 'list')) return;
-
-    if (event.repeat) return;
-
-    event.preventDefault();
-    keys.current = true;
-
-    if (place === 'list') {
-      if (hand === null || hand === undefined) {
-        const section = input.sections[list];
-        if (section === null || section === undefined) return;
-
-        seek.current = true;
-        publish({
-          zone: 'grid',
-          list,
-          day,
-          slot,
-          hand: { kind: 'section', sectionId: section.id },
-          focus: false,
-        });
-
-        return;
-      }
-
-      if (hand.kind === 'lesson') {
-        board.dropHand(hand, { kind: 'unassign' });
-
-        return;
-      }
-
-      publish({ zone: 'list', list, day, slot, hand: null, focus: true });
-
-      return;
-    }
-
-    if (hand === null || hand === undefined) {
-      const lesson = lessonAt(input.lessons, input.days, input.slots, day, slot, event.target);
-      if (lesson === null || lesson === undefined) return;
-
-      // Курсор переезжает в клетку взятой карточки, иначе пунктир цели остаётся
-      // там, где он был до этого, и не совпадает с тем, что мы держим в руке.
-      const from = lessonSlot(lesson, input.days, input.slots) ?? { day, slot };
-
-      publish({
-        zone: 'grid',
-        list,
-        day: from.day,
-        slot: from.slot,
-        hand: { kind: 'lesson', lessonId: lesson.id },
-        focus: true,
-      });
-
-      return;
-    }
-
-    const dayId = input.days[day];
-    const slotId = input.slots[slot];
-    if (!dayId || !slotId) return;
-
-    if (hand.kind === 'lesson' && !event.shiftKey && isHome(input.lessons, hand.lessonId, dayId, slotId)) {
-      publish({ zone: 'grid', list, day, slot, hand: null, focus: true });
-
-      return;
-    }
-
-    board.dropHand(hand, { kind: 'slot', day: dayId, timeSlotId: slotId });
+    handleHandKey({ event, input, board, hand, zone, list, day, slot, keys, seek, publish });
   });
 
   useEffect(() => {
@@ -386,7 +114,7 @@ export function useHand(input: HandInput) {
       });
     },
     enter: (next: Zone) => {
-      if (next === 'list' && hand?.kind === 'section' && !keys.current && !leftList.current) return;
+      if (keepOffList(next)) return;
 
       if (next === zone && armed) return;
 
@@ -400,7 +128,7 @@ export function useHand(input: HandInput) {
       publish({ zone: 'grid', list, day: dayIndex, slot: slotIndex, hand, focus: false });
     },
     focusGrid: (dayIndex: number, slotIndex: number) => {
-      if (zone === 'grid' && day === dayIndex && slot === slotIndex && armed) return;
+      if (alreadyAimed(dayIndex, slotIndex)) return;
 
       keys.current = true;
       publish({ zone: 'grid', list, day: dayIndex, slot: slotIndex, hand, focus: false });
@@ -433,91 +161,4 @@ export function useHand(input: HandInput) {
       board.dropHand(hand, { kind: 'slot', day: dayId, timeSlotId: slotId });
     },
   };
-}
-
-function firstOpen(
-  days: WeekDay[],
-  slots: string[],
-  lessons: Lesson[],
-  advice: Map<string, SlotAdvice>,
-): { day: number, slot: number } | null {
-  let fallback: { day: number, slot: number } | null = null;
-  for (let slot = 0; slot < slots.length; slot++) {
-    for (let day = 0; day < days.length; day++) {
-      const dayId = days[day];
-      const slotId = slots[slot];
-      if (!dayId || !slotId) continue;
-
-      const item = advice.get(slotKey(dayId, slotId));
-      if (!item?.ok) continue;
-
-      const occupied = lessons.some((lesson) => lesson.day === dayId && lesson.timeSlotId === slotId);
-      if (!occupied) return { day, slot };
-
-      if (fallback === null || fallback === undefined) fallback = { day, slot };
-    }
-  }
-
-  return fallback;
-}
-
-function isHome(lessons: Lesson[], lessonId: string, dayId: WeekDay, slotId: string): boolean {
-  const lesson = lessons.find((item) => item.id === lessonId);
-  return lesson?.day === dayId && lesson.timeSlotId === slotId;
-}
-
-function lessonAt(
-  lessons: Lesson[],
-  days: WeekDay[],
-  slots: string[],
-  day: number,
-  slot: number,
-  target: EventTarget | null,
-): Lesson | null {
-  if (target instanceof Element) {
-    const id = target.closest('[data-lesson-id]')?.getAttribute('data-lesson-id');
-    if (id) return lessons.find((item) => item.id === id) ?? null;
-  }
-
-  const dayId = days[day];
-  const slotId = slots[slot];
-  if (!dayId || !slotId) return null;
-
-  return lessons.find((item) => item.day === dayId && item.timeSlotId === slotId) ?? null;
-}
-
-function lessonSlot(
-  lesson: Lesson,
-  days: WeekDay[],
-  slots: string[],
-): { day: number, slot: number } | null {
-  const day = days.indexOf(lesson.day);
-  const slot = slots.indexOf(lesson.timeSlotId);
-  if (day < 0 || slot < 0) return null;
-
-  return { day, slot };
-}
-
-function zoneOf(target: EventTarget | null): Zone | null {
-  if (!(target instanceof Element)) return null;
-
-  if (target.closest('[data-keyboard-zone="grid"]')) return 'grid';
-
-  if (target.closest('[data-keyboard-zone="list"]')) return 'list';
-
-  return null;
-}
-
-function typing(target: EventTarget | null): boolean {
-  if (!(target instanceof HTMLElement)) return false;
-
-  if (target.closest('[role="dialog"]')) return true;
-
-  const tag = target.tagName;
-
-  return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || target.isContentEditable;
-}
-
-function isArrow(key: string): boolean {
-  return matchesKey('navigation', key);
 }

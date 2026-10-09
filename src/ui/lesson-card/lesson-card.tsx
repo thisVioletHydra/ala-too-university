@@ -185,6 +185,7 @@ function CardAction(props: { lessonId: string; action: 'edit' | 'cancel'; label:
   return <button ref={drop.setNodeRef} type="button" className={styles.action} data-action={props.action} data-over={drop.isOver ? 'yes' : 'no'} onClick={(event) => {
     event.stopPropagation();
     if (board.skipClick()) return;
+
     if (props.action === 'edit') board.setEditor({ mode: 'edit', lessonId: props.lessonId });
     else {
       board.setHold({ hand: null, aim: board.hold.aim, overKey: null, overList: false });

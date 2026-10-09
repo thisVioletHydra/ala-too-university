@@ -1,14 +1,14 @@
-import { matchesKey } from '#interaction/keyboard.ts';
-import { pickerReturnAfter, pickerReturnLesson } from '#interaction/picker-return.ts';
 import type { PickerReturn } from '#interaction/picker-return.ts';
-import { groupView, groupCommand, pickerState } from '#interaction/group-policy.ts';
 import type { LessonCardProps } from '#ui/lesson-card/lesson-card.tsx';
 
+import { matchesKey } from '#interaction/keyboard.ts';
+import { pickerReturnAfter, pickerReturnLesson } from '#interaction/picker-return.ts';
+import { groupView, groupCommand, pickerState } from '#interaction/group-policy.ts';
 import { useBoard } from '#app/providers.tsx';
 import { useSchedule } from '#app/schedule.store.ts';
 import { LessonCard, RoomIcon, SourcePlaceholder } from '#ui/lesson-card/lesson-card.tsx';
+import { SlotPicker } from '#ui/schedule-grid/slot-picker.tsx';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
 
 import styles from '#ui/schedule-grid/schedule-grid.module.css';
 
@@ -35,11 +35,13 @@ export function SlotLessons(props: { label: string, items: LessonCardProps[] }) 
   useEffect(() => {
     function restorePicker(): void {
       const lessonId = pickerReturnLesson(returnToPicker.current, items.map((item) => item.lessonId));
-      if (!lessonId) return;
+      if (lessonId === null || lessonId === undefined) return;
+
       returnToPicker.current = pickerReturnAfter(returnToPicker.current, { kind: 'release' });
       selected.current = lessonId;
       setOpen(true);
     }
+
     window.addEventListener('schedule:cancel-hand', restorePicker);
     return () => window.removeEventListener('schedule:cancel-hand', restorePicker);
   }, [items]);
@@ -51,9 +53,11 @@ export function SlotLessons(props: { label: string, items: LessonCardProps[] }) 
   useEffect(() => {
     function markAction(event: KeyboardEvent): void {
       if (returnToPicker.current.kind === 'none') return;
+
       const changesIntent = matchesKey('copyMode', event.key) || matchesKey('place', event.key);
       if (changesIntent) returnToPicker.current = pickerReturnAfter(returnToPicker.current, { kind: 'action' });
     }
+
     window.addEventListener('keydown', markAction, true);
     return () => window.removeEventListener('keydown', markAction, true);
   }, [board.hold.hand, board.ghost]);
@@ -61,11 +65,18 @@ export function SlotLessons(props: { label: string, items: LessonCardProps[] }) 
   useEffect(() => { setPosition(null); }, [carried?.kind === 'lesson' ? carried.lessonId : null]);
   useLayoutEffect(() => {
     const slot = root.current?.closest<HTMLElement>('[data-slot]');
-    if (!slot) return;
+    if (slot === null || slot === undefined) return;
+
     if (reordering) slot.dataset.reorderTarget = items[insertion].lessonId;
     else delete slot.dataset.reorderTarget;
+
     return () => { delete slot.dataset.reorderTarget; };
   }, [reordering, insertion, items]);
+
+  /** Полоски раскрываются, только когда ничего не несут и не тащат. */
+  function cannotOpenStrips(): boolean {
+    return !strips || board.hold.hand !== null || board.ghost !== null || board.skipClick();
+  }
 
   function show(): void {
     if (board.hold.hand || board.ghost) return;
@@ -83,8 +94,10 @@ export function SlotLessons(props: { label: string, items: LessonCardProps[] }) 
   useEffect(() => {
     const state = pickerState(open, board.editor !== null);
     if (state === 'closed') return;
+
     if (state === 'suspended-for-editor') {
       dialog.current?.close();
+
       return;
     }
 
@@ -107,14 +120,20 @@ export function SlotLessons(props: { label: string, items: LessonCardProps[] }) 
       const held = board.hold.hand;
       const cellTarget = event.target === slot || Boolean(event.target instanceof Element && event.target.closest('[data-slot-strip]'));
       const command = groupCommand({
-        lessonIds: items.map((item) => item.lessonId), hand: held, dragging: board.ghost !== null,
-        copyMode: event.shiftKey, key: event.key, cellTarget,
+        lessonIds: items.map((item) => item.lessonId),
+        hand: held,
+        dragging: board.ghost !== null,
+        copyMode: event.shiftKey,
+        key: event.key,
+        cellTarget,
       });
       if (held) {
         if (command === 'ignore') return;
+
         event.preventDefault();
         event.stopPropagation();
         if (event.repeat) return;
+
         if (command === 'confirm-order' && held.kind === 'lesson') {
           useSchedule.getState().swapLessons(held.lessonId, items[insertion].lessonId);
           board.setHold({ ...board.hold, hand: null, overKey: null, overList: false });
@@ -123,39 +142,51 @@ export function SlotLessons(props: { label: string, items: LessonCardProps[] }) 
           const direction = command === 'reorder-down' ? 1 : -1;
           setPosition(Math.max(0, Math.min(items.length - 1, insertion + direction)));
         }
+
         return;
       }
+
       if (!strips && card) {
         if (!['ArrowUp', 'ArrowDown', 'Enter', ' ', 'Escape', 'Delete', 'Backspace'].includes(event.key)) return;
+
         event.preventDefault();
         event.stopPropagation();
         if (event.repeat) return;
+
         const index = items.findIndex((item) => item.lessonId === card.dataset.lessonId);
         if (index < 0) return;
+
         if (matchesKey('remove', event.key)) {
           useSchedule.getState().unassignLesson(items[index].lessonId);
           (slot as HTMLElement)?.focus();
         }
+
         if (matchesKey('cancel', event.key)) (slot as HTMLElement)?.focus();
+
         if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
           const next = items[(index + (event.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length];
           root.current?.querySelector<HTMLElement>(`[data-lesson-id="${CSS.escape(next.lessonId)}"]`)?.focus();
         }
+
         if (matchesKey('edit', event.key)) board.setEditor({ mode: 'edit', lessonId: items[index].lessonId });
+
         if (matchesKey('place', event.key)) items[index].onGrab();
+
         return;
       }
 
       if (command === 'ignore') return;
+
       event.preventDefault();
       event.stopPropagation();
       if (event.repeat) return;
+
       if (command === 'open-picker') show();
       else root.current?.querySelector<HTMLElement>('[data-lesson-id]')?.focus();
     }
 
     function openStrips(event: Event): void {
-      if (!strips || board.hold.hand || board.ghost || board.skipClick()) return;
+      if (cannotOpenStrips()) return;
 
       event.preventDefault();
       event.stopPropagation();
@@ -171,25 +202,36 @@ export function SlotLessons(props: { label: string, items: LessonCardProps[] }) 
   }, [multiple, strips, items, board.hold.hand, board.ghost, insertion]);
 
   useEffect(() => {
-    if (!reordering) return;
+    if (reordering === false) return;
+
     const slot = root.current?.closest<HTMLElement>('[data-slot]');
     function point(event: PointerEvent): void {
       if (event.target instanceof Element && event.target.closest('[data-action]')) return;
+
       if (!slot || (event.movementX === 0 && event.movementY === 0)) return;
+
       const rect = root.current!.getBoundingClientRect();
       setPosition(event.clientY < rect.top + rect.height / 2 ? 0 : 1);
     }
+
     function confirm(event: MouseEvent): void {
       if (event.target instanceof Element && event.target.closest('[data-action]')) return;
-      if (board.ghost || !carried || carried.kind !== 'lesson' || board.skipClick()) return;
+
+      if (board.ghost !== null || board.skipClick()) return;
+
+      const moved = carried?.kind === 'lesson' ? carried : null;
+      if (moved === null) return;
+
       event.preventDefault();
       event.stopPropagation();
-      useSchedule.getState().swapLessons(carried.lessonId, items[insertion].lessonId);
+      useSchedule.getState().swapLessons(moved.lessonId, items[insertion].lessonId);
       board.setHold({ ...board.hold, hand: null, overKey: null, overList: false });
       slot?.focus();
     }
+
     slot?.addEventListener('pointermove', point);
     slot?.addEventListener('click', confirm, true);
+
     return () => {
       slot?.removeEventListener('pointermove', point);
       slot?.removeEventListener('click', confirm, true);
@@ -228,61 +270,13 @@ export function SlotLessons(props: { label: string, items: LessonCardProps[] }) 
           {reordering && item.lessonId === items[sourceIndex].lessonId ? <div className={styles.insertion} role="status"><strong>{item.code}</strong><span>{insertion === 0 ? 'Поставить первым' : 'Поставить вторым'}</span></div> : null}
         </div>)
     }
-    {open ? createPortal(<dialog ref={dialog} data-slot-picker className={styles.picker} aria-label={`Занятия: ${props.label}`}
-      onCancel={(event) => { event.preventDefault();
-        close();
-      }}
-      onClick={(event) => { if (event.target === event.currentTarget) close(); }}
-      onKeyDown={(event) => {
-        event.stopPropagation();
-        const cards = Array.from(event.currentTarget.querySelectorAll<HTMLElement>('[data-lesson-id]'));
-        const active = cards.indexOf(document.activeElement as HTMLElement);
-        if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
-          event.preventDefault();
-          const next = active < 0 ? (event.key === 'ArrowDown' ? 0 : cards.length - 1) : (active + (event.key === 'ArrowDown' ? 1 : -1) + cards.length) % cards.length;
-          cards[next]?.focus();
-        }
-
-        if (active >= 0 && (matchesKey('edit', event.key) || matchesKey('place', event.key))) {
-          event.preventDefault();
-          if (event.repeat) return;
-
-          const item = items[active];
-          if (matchesKey('edit', event.key)) {
-            selected.current = item.lessonId;
-            board.setEditor({ mode: 'edit', lessonId: item.lessonId });
-          } else {
-            returnToPicker.current = pickerReturnAfter(returnToPicker.current, { kind: 'grab', lessonId: item.lessonId });
-            close(false);
-            item.onGrab();
-          }
-        }
-
-        if (event.key === 'Tab') {
-          event.preventDefault();
-          const stops = [...cards, event.currentTarget.querySelector<HTMLElement>('[data-close-picker]')!];
-          const index = stops.indexOf(document.activeElement as HTMLElement);
-          stops[(index + (event.shiftKey ? -1 : 1) + stops.length) % stops.length]?.focus();
-        }
-      }}>
-      <header className={styles.pickerHead}><div><strong>{props.label}</strong><span>Занятий одновременно: {items.length}</span></div>
-        <button
-          type="button"
-          data-close-picker
-          aria-label="Закрыть список занятий"
-          onClick={() => close()}>
-            <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
-            <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-            </svg>
-          </button>
-      </header>
-      <div className={styles.pickerList}>{items.map((item) => <LessonCard key={item.lessonId} {...item}
-        listView
-        onGrab={() => { returnToPicker.current = pickerReturnAfter(returnToPicker.current, { kind: 'grab', lessonId: item.lessonId });
-          close(false);
-          item.onGrab();
-        }} />)}</div>
-      <p className={styles.pickerHint}>↑↓ выбрать · Enter редактировать · Пробел взять · Esc закрыть</p>
-    </dialog>, document.body) : null}
+    {open ? <SlotPicker
+      label={props.label}
+      items={items}
+      dialog={dialog}
+      selected={selected}
+      returnToPicker={returnToPicker}
+      onClose={close}
+    /> : null}
   </div>;
 }

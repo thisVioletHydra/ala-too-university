@@ -4,6 +4,11 @@ import styles from '#ui/select/select.module.css';
 
 type Option = { value: string; label: string; disabled?: boolean; detail?: string };
 
+/** Печатный символ без служебных модификаторов — годится для поиска по первым буквам. */
+function isTypeahead(event: { key: string; metaKey: boolean; ctrlKey: boolean; altKey: boolean }): boolean {
+  return event.key.length === 1 && !event.metaKey && !event.ctrlKey && !event.altKey;
+}
+
 export function Select(props: { label: string; value: string; options: Option[]; onChange: (value: string) => void }) {
   const id = useId();
   const root = useRef<HTMLDivElement>(null);
@@ -46,7 +51,7 @@ export function Select(props: { label: string; value: string; options: Option[];
     }
   }
 
-  return <div className={styles.field} ref={root} onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setOpen(false); }}>
+  return <div className={styles.field} ref={root} onBlur={(event) => { if (event.currentTarget.contains(event.relatedTarget) === false) setOpen(false); }}>
     <button type="button" role="combobox" className={styles.trigger} aria-label={props.label} title={`${props.label}: ${props.options[selected]?.label}`} aria-haspopup="listbox" aria-expanded={open} aria-controls={id} aria-activedescendant={open ? `${id}-${active}` : undefined} data-filtered={props.value ? 'yes' : 'no'}
       onClick={() => { setActive(selected);
         setOpen(!open);
@@ -93,7 +98,7 @@ export function Select(props: { label: string; value: string; options: Option[];
           return;
         }
 
-        if (event.key.length === 1 && !event.metaKey && !event.ctrlKey && !event.altKey) {
+        if (isTypeahead(event)) {
           event.preventDefault();
           event.stopPropagation();
           search.current.text = Date.now() - search.current.time < 700 ? search.current.text + event.key : event.key;
@@ -114,8 +119,8 @@ export function Select(props: { label: string; value: string; options: Option[];
         onClick={(event) => { event.preventDefault();
           event.stopPropagation();
           if (!option.disabled) { props.onChange(option.value);
-          setOpen(false);
-        }
+            setOpen(false);
+          }
         }}>
         <span>{option.label}{option.detail ? <small>{option.detail}</small> : null}</span><span aria-hidden="true">{option.value === props.value ? '✓' : ''}</span>
       </div>)}
