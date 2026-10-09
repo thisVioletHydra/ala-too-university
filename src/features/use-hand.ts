@@ -259,7 +259,10 @@ export function useHand(input: HandInput) {
         day,
         slot,
         hand: { kind: 'section', sectionId },
-        focus: true,
+        // Pointer pickup must not focus the grid's remembered keyboard cell.
+        // The dashed aim is set later when the pointer enters a slot.
+        focus: false,
+        aim: '',
       });
     },
     grabLesson: (lessonId: string, dayIndex: number, slotIndex: number) => {
