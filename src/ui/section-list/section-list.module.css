@@ -319,6 +319,10 @@
 .head .tabs { margin-inline-start: auto; padding: 0.18rem; }
 .head .tabs button { padding: 0.25rem 0.35rem; font-size: 0.69rem; gap: 0.25rem; }
 .group { border-top: 1px solid var(--line); margin-block-start: 0.5rem; padding-block: 0.8rem 0.4rem; align-items: center; }
+.group:first-child {
+  border: unset;
+  margin: unset;
+}
 .group span small { display: block; margin-block-start: 0.15rem; font-size: 0.68rem; }
 
 .head .tabs { min-width: 0; max-width: 100%; }

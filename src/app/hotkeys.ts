@@ -11,9 +11,12 @@ export function bindHotkeys(handlers: Hotkeys): () => void {
   const platform = detectPlatform(navigator.platform);
   function onKeyDown(event: KeyboardEvent): void {
     if (event.defaultPrevented) return;
+
     const command = globalCommand(event, platform);
-    if (!command) return;
+    if (command === null || command === undefined) return;
+
     if (command !== 'close') event.preventDefault();
+
     handlers[command]();
   }
 
