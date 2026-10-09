@@ -5,6 +5,8 @@ type UndoBarProps = {
   canRedo: boolean
   onUndo: () => void
   onRedo: () => void
+  canClear: boolean
+  onClear: () => void
 };
 
 function ArrowIcon(props: { flip: boolean }) {
@@ -55,6 +57,12 @@ export function UndoBar(props: UndoBarProps) {
       >
         <ArrowIcon flip />
         Повторить
+      </button>
+      <button type="button" disabled={!props.canClear} onClick={props.onClear} title="Очистить расписание">
+        <svg className={styles.icon} viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" aria-hidden="true">
+          <path d="M3 5h14M7 5V3h6v2M5 5l1 12h8l1-12M8 8v6m4-6v6" />
+        </svg>
+        Очистить
       </button>
     </div>
   );

@@ -61,12 +61,12 @@ export function placementConflict(input: ConflictInput): ConflictResult {
   }
 
   const blocked = busy.blockedReason.get(slotKey(placement.teacherId, placement.day, placement.timeSlotId));
-  if (blocked) {
+  if (placement.teacherId && blocked) {
     return { ok: false, kind: 'teacher-blocked', text: blocked };
   }
 
   const teacherHit = busy.teacherAt.get(slotKey(placement.teacherId, placement.day, placement.timeSlotId));
-  if (teacherHit) {
+  if (placement.teacherId && teacherHit) {
     return { ok: false, kind: 'teacher-busy', text: 'Преподаватель занят' };
   }
 
@@ -83,7 +83,7 @@ export function placementConflict(input: ConflictInput): ConflictResult {
     return { ok: false, kind: 'room-busy', text: 'Аудитория занята' };
   }
 
-  if (!section.allowedTeacherIds.includes(placement.teacherId)) {
+  if (placement.teacherId && !section.allowedTeacherIds.includes(placement.teacherId)) {
     return {
       ok: false,
       kind: 'teacher-not-allowed',
@@ -188,9 +188,9 @@ export function explainSlot(input: ExplainInput): SlotAdvice {
     lessons: input.lessons,
     excludeLessonId: input.excludeLessonId,
   });
-  const freeTeacher = input.section.allowedTeacherIds.find((teacherId) => {
-    return teacherStopText(busy, teacherId, input.day, input.timeSlotId) === null;
-  });
+  if (input.teacherId === '') {
+    return { ok: Boolean(room), text: room ? null : noRoomText(input.section, input.rooms), teacherId: '', roomId: room?.id ?? null, needsChoice: !room };
+  }
 
   if (room === null || room === undefined) {
     return {
@@ -202,25 +202,11 @@ export function explainSlot(input: ExplainInput): SlotAdvice {
     };
   }
 
-  if (freeTeacher === null || freeTeacher === undefined) {
-    const first = input.section.allowedTeacherIds[0];
-    const text = first
-      ? teacherStopText(busy, first, input.day, input.timeSlotId)
-      : 'Нет преподавателя';
-
-    return {
-      ok: false,
-      text: text ?? 'Преподаватель занят',
-      teacherId: null,
-      roomId: room.id,
-      needsChoice: false,
-    };
-  }
 
   return {
     ok: true,
     text: null,
-    teacherId: freeTeacher,
+    teacherId: null,
     roomId: room.id,
     needsChoice: true,
   };

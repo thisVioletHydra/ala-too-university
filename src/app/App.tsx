@@ -1,25 +1,27 @@
-import type { ScheduleCatalog, Section } from '#schedule/types.ts'
+import { sectionTeacher } from '#schedule/section-teacher.ts';
+import type { ScheduleCatalog, Section } from '#schedule/types.ts';
+import type { Dataset } from '#app/schedule.store.ts';
 
-import { bindHotkeys } from '#app/hotkeys.ts'
-import { Providers, useBoard } from '#app/providers.tsx'
-import { useSchedule, type Dataset } from '#app/schedule.store.ts'
-import { loadSchedule } from '#data/schedule.parser.ts'
-import { readStoredSchedule } from '#data/schedule.storage.ts'
-import { withManySections } from '#data/withManySections.ts'
-import { scheduleProgress } from '#schedule/section-progress.ts'
-import { useHand } from '#features/use-hand.ts'
-import { useSearch } from '#features/use-search.ts'
-import { useStorage } from '#features/use-storage.ts'
-import { useUndo } from '#features/use-undo.ts'
-import { DragGhost, HandCursor } from '#ui/drag-ghost/drag-ghost.tsx'
-import { Filters } from '#ui/filters/filters.tsx'
-import { LessonEditor } from '#ui/lesson-editor/lesson-editor.tsx'
-import { ScheduleGrid } from '#ui/schedule-grid/schedule-grid.tsx'
-import { SectionList } from '#ui/section-list/section-list.tsx'
-import { Status } from '#ui/status/status.tsx'
-import { UndoBar } from '#ui/undo-bar/undo-bar.tsx'
-import { WorkspaceSettings } from '#ui/workspace-settings.tsx'
-import { useCallback, useEffect, useState } from 'react'
+import { bindHotkeys } from '#app/hotkeys.ts';
+import { Providers, useBoard } from '#app/providers.tsx';
+import { useSchedule } from '#app/schedule.store.ts';
+import { loadSchedule } from '#data/schedule.parser.ts';
+import { readStoredSchedule } from '#data/schedule.storage.ts';
+import { withManySections } from '#data/withManySections.ts';
+import { scheduleProgress } from '#schedule/section-progress.ts';
+import { useHand } from '#features/use-hand.ts';
+import { useSearch } from '#features/use-search.ts';
+import { useStorage } from '#features/use-storage.ts';
+import { useUndo } from '#features/use-undo.ts';
+import { DragGhost, HandCursor } from '#ui/drag-ghost/drag-ghost.tsx';
+import { Filters } from '#ui/filters/filters.tsx';
+import { LessonEditor } from '#ui/lesson-editor/lesson-editor.tsx';
+import { ScheduleGrid } from '#ui/schedule-grid/schedule-grid.tsx';
+import { SectionList } from '#ui/section-list/section-list.tsx';
+import { Status } from '#ui/status/status.tsx';
+import { UndoBar } from '#ui/undo-bar/undo-bar.tsx';
+import { WorkspaceSettings } from '#ui/workspace-settings.tsx';
+import { useCallback, useEffect, useState } from 'react';
 
 export default function App() {
   const [status, setStatus] = useState<'loading' | 'error' | 'ready'>('loading');
@@ -55,7 +57,7 @@ export default function App() {
     const fail = new URLSearchParams(location.search).has('fail');
     setStatus('loading');
     loadSchedule({ fail }).then((next) => {
-      if (!active) return
+      if (!active) return;
 
       const stored = readStoredSchedule();
       const mode = stored?.dataset === 'bulk' ? 'bulk' : 'mock';
@@ -67,7 +69,7 @@ export default function App() {
 
       setStatus('ready');
     }).catch((error: unknown) => {
-      if (!active) return
+      if (!active) return;
 
       setMessage(error instanceof Error ? error.message : 'Не удалось загрузить расписание');
       setStatus('error');
@@ -112,6 +114,17 @@ type WorkspaceProps = {
 };
 
 function Workspace(props: WorkspaceProps) {
+  const storeCatalog = useSchedule((state) => state.catalog);
+  useEffect(() => {
+    if (storeCatalog) return;
+
+    const store = useSchedule.getState();
+    store.setCatalog(props.catalog);
+    store.setDataset(props.dataset);
+    const saved = readStoredSchedule();
+    if (saved?.dataset === props.dataset) store.replaceLessons(saved.lessons, saved.past, saved.future);
+    else store.replaceLessons(props.catalog.lessons);
+  }, [storeCatalog, props.catalog, props.dataset]);
   const [sectionsHidden, setSectionsHidden] = useState(false);
   const lessons = useSchedule((state) => state.lessons);
   const remembered = useSchedule((state) => state.rememberedTeachers);
@@ -155,14 +168,15 @@ function Workspace(props: WorkspaceProps) {
   }, [setEditor, undo, redo]);
 
   function teacherName(section: Section): string | null {
-    const id = section.teacherId ?? remembered[section.id] ?? lessons.find((lesson) => lesson.sectionId === section.id)?.teacherId;
+    const id = sectionTeacher(section, lessons, remembered);
     if (id === null || id === undefined) return null;
+
     return props.catalog.teachers.find((teacher) => teacher.id === id)?.shortName ?? null;
   }
 
   const editorKey = board.editor?.mode === 'edit'
     ? board.editor.lessonId
-    : board.editor
+    : board.editor?.mode === 'section' ? `section-${board.editor.sectionId}` : board.editor
       ? `${board.editor.sectionId}-${board.editor.day}-${board.editor.timeSlotId}`
       : 'closed';
 
@@ -185,6 +199,15 @@ function Workspace(props: WorkspaceProps) {
         <div id="keyboard-hints-slot" className="keyboard-hints-slot" />
         <div className="actions">
           <UndoBar
+            canClear={lessons.length > 0 && !board.ghost}
+            onClear={() => {
+              if (window.confirm('Вы уверены? Все занятия будут убраны из расписания.') === null || window.confirm('Вы уверены? Все занятия будут убраны из расписания.') === undefined) return;
+
+              board.setEditor(null);
+              board.clearLanding();
+              board.setHold({ hand: null, aim: '', overKey: null, overList: false });
+              useSchedule.getState().clearLessons();
+            }}
             canUndo={history.canUndo}
             canRedo={history.canRedo}
             onUndo={() => {
@@ -211,13 +234,19 @@ function Workspace(props: WorkspaceProps) {
         <SectionList
           hidden={sectionsHidden}
           sections={search.visible}
+          groupBy={search.groupBy}
+          onGroupBy={search.setGroupBy}
+          sectionTeacherId={search.sectionTeacherId}
+          onSectionTeacher={search.setSectionTeacherId}
+          teachers={props.catalog.teachers}
           lessons={lessons}
           courseName={courseName}
           courseCode={courseCode}
           teacherName={teacherName}
           highlighted={(section) => {
-            const id = section.teacherId ?? remembered[section.id] ?? lessons.find((lesson) => lesson.sectionId === section.id)?.teacherId;
+            const id = sectionTeacher(section, lessons, remembered);
             if (search.teacherId === null || search.teacherId === undefined) return false;
+
             return id === search.teacherId;
           }}
           filtering={search.teacherId !== null}
@@ -239,8 +268,11 @@ function Workspace(props: WorkspaceProps) {
         </div>
         <section className="board">
           <div className="board-tools">
-            <div className="schedule-summary" title={carried ? 'Перенос занятия: исходное место и текущая цель' : `${placed} из ${required} занятий поставлено; осталось ${remaining}`}>
-              {carried ? <><strong>{carriedSection?.code}</strong><span className="transfer-origin">Откуда: {sourceLesson ? `${sourceDay?.label}, ${sourceSlot?.start}` : 'список секций'}</span><span>{destinationDay && destinationSlot ? `→ ${destinationDay.label}, ${destinationSlot.start}` : 'Выберите ячейку'}</span></> : <>
+            <div className="schedule-summary"
+            title={carried ? 'Перенос занятия: исходное место и текущая цель' : `${placed} из ${required} занятий поставлено; осталось ${remaining}`}>
+              {carried
+                ? <><strong>{carriedSection?.code}</strong><span className="transfer-origin">Откуда: {sourceLesson ? `${sourceDay?.label}, ${sourceSlot?.start}` : 'список секций'}</span><span>{destinationDay && destinationSlot ? `→ ${destinationDay.label}, ${destinationSlot.start}` : 'Выберите ячейку'}</span></>
+                : <>
               <strong>{placed}<span> / {required} занятий</span></strong>
               <progress value={placed} max={Math.max(required, 1)} aria-label="Прогресс составления расписания" />
               <span>{remaining === 0 ? 'Всё готово' : `Осталось ${remaining}`}</span>

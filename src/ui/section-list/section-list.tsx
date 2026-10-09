@@ -1,5 +1,6 @@
 import type { ListMode } from '#features/use-search.ts';
-import type { Lesson, Section } from '#schedule/types.ts';
+import type { Lesson, Section, Teacher } from '#schedule/types.ts';
+import { Select } from '#ui/select/select.tsx';
 
 import { useDroppable } from '@dnd-kit/core';
 import { useBoard } from '#app/providers.tsx';
@@ -9,6 +10,11 @@ import { Fragment } from 'react';
 import styles from '#ui/section-list/section-list.module.css';
 
 type SectionListProps = {
+  groupBy: 'course' | 'teacher'
+  onGroupBy: (value: 'course' | 'teacher') => void
+  sectionTeacherId: string
+  onSectionTeacher: (value: string) => void
+  teachers: Teacher[]
   hidden: boolean
   sections: Section[]
   lessons: Lesson[]
@@ -33,6 +39,7 @@ type SectionListProps = {
 export function SectionList(props: SectionListProps) {
   const board = useBoard();
   const unassign = useDroppable({ id: 'unassign', data: { kind: 'unassign' } });
+  const titles: Record<ListMode, string> = { all: 'Все секции', 'not-done': 'Осталось распределить', done: 'Готовые секции', 'no-teacher': 'Нужен преподаватель', excess: 'Дополнительные занятия' };
 
   return (
     <aside
@@ -54,12 +61,12 @@ export function SectionList(props: SectionListProps) {
     >
       <header className={styles.head}>
         <h1 className={styles.title}>Секции</h1>
-        <div className={styles.tabs} aria-label="Количество секций по статусу">
+        <div className={styles.tabs} data-mode={props.mode} aria-label="Количество секций по статусу">
           {([{ id: 'not-done', label: 'Осталось' }, { id: 'done', label: 'Готово' }, { id: 'all', label: 'Все' }] as const).map((tab) => <button key={tab.id} type="button" aria-pressed={props.mode === tab.id} title={`${tab.label}: ${props.counts[tab.id]} секций`} aria-label={`${tab.label}: ${props.counts[tab.id]} секций`} onClick={() => props.onMode(tab.id)}>{tab.label}<span>{props.counts[tab.id]}</span></button>)}
         </div>
       </header>
+      <div className={styles.content}>
       <div className={styles.find}>
-        <label className={styles.searchLabel} htmlFor="section-search">Поиск</label>
         <span className={styles.searchField}>
           <svg className={styles.searchIcon} viewBox="0 0 16 16" aria-hidden="true">
             <circle cx="7" cy="7" r="4.5" fill="none" stroke="currentColor" strokeWidth="1.6" />
@@ -69,7 +76,8 @@ export function SectionList(props: SectionListProps) {
             id="section-search"
             className={styles.search}
             value={props.query}
-            placeholder="Название или код"
+            aria-label="Поиск секций по названию или коду"
+            placeholder="Поиск по названию или коду"
             onChange={(event) => props.onQuery(event.target.value)}
           />
           {props.query.length > 0
@@ -94,6 +102,13 @@ export function SectionList(props: SectionListProps) {
             : null}
         </span>
       </div>
+      <div className={styles.viewHead}>
+        <h2>{titles[props.mode]}</h2>
+        <button type="button" aria-label={props.groupBy === 'course' ? 'Группировать по преподавателям' : 'Группировать по дисциплинам'} title={props.groupBy === 'course' ? 'По дисциплинам · переключить на преподавателей' : 'По преподавателям · переключить на дисциплины'} onClick={() => props.onGroupBy(props.groupBy === 'course' ? 'teacher' : 'course')}>
+          <svg viewBox="0 0 20 20" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="1.4" aria-hidden="true">{props.groupBy === 'teacher' ? <><circle cx="10" cy="6" r="3" /><path d="M4 17v-2a6 6 0 0 1 12 0v2" /></> : <><rect x="3" y="3" width="14" height="14" rx="2" /><path d="M7 3v14M10 7h4M10 11h4" /></>}</svg>
+        </button>
+      </div>
+      {props.groupBy === 'teacher' ? <Select label="Секции преподавателя" value={props.sectionTeacherId} onChange={props.onSectionTeacher} options={[{ value: '', label: 'Все преподаватели' }, ...props.teachers.map((teacher) => ({ value: teacher.id, label: teacher.shortName }))]} /> : null}
       <div className={styles.tray} data-tray data-over={board.overUnassign ? 'yes' : 'no'}>
         <div
           className={styles.list}
@@ -115,10 +130,15 @@ export function SectionList(props: SectionListProps) {
             : null}
           {props.sections.map((section, index) => (
             <Fragment key={section.id}>
-              {props.sections[index - 1]?.courseId !== section.courseId ? <div className={styles.group} data-section-group role="heading" aria-level={2} data-course={section.courseId}><span>{props.courseName(section)}<small>Преподавателей: {new Set(props.sections.filter((item) => item.courseId === section.courseId).map(props.teacherName).filter(Boolean)).size}</small></span><small>{props.courseCode(section)}</small></div> : null}
+              {(props.groupBy === 'course' ? props.sections[index - 1]?.courseId === section.courseId : index > 0 && props.teacherName(props.sections[index - 1]) === props.teacherName(section)) ? null : <div className={styles.group} data-section-group role="heading" aria-level={2} data-course={section.courseId}><span>{props.groupBy === 'course' ? props.courseName(section) : props.teacherName(section) ?? 'Нужен преподаватель'}<small>{props.groupBy === 'course' ? `Преподавателей: ${new Set(props.sections.filter((item) => item.courseId === section.courseId).map(props.teacherName).filter(Boolean)).size}` : 'Дисциплины преподавателя'}</small></span>{props.groupBy === 'course' ? <small>{props.courseCode(section)}</small> : null}</div>}
+            <div className={styles.linkedCard}
+              data-first={index === 0 || (props.groupBy === 'course' ? props.sections[index - 1]?.courseId !== section.courseId : props.teacherName(props.sections[index - 1]) !== props.teacherName(section)) ? 'yes' : 'no'}
+              data-last={index === props.sections.length - 1 || (props.groupBy === 'course' ? props.sections[index + 1]?.courseId !== section.courseId : props.teacherName(props.sections[index + 1]) !== props.teacherName(section)) ? 'yes' : 'no'}>
+            <span className={styles.groupDot} aria-hidden="true" />
             <SectionCard
               key={section.id}
               section={section}
+              showCourse={props.groupBy === 'teacher'}
               courseName={props.courseName(section)}
               courseCode={props.courseCode(section)}
               teacherName={props.teacherName(section)}
@@ -129,6 +149,7 @@ export function SectionList(props: SectionListProps) {
               tabStop={index === props.listIndex}
               onGrab={() => props.onGrab(section.id, index)}
             />
+            </div>
             </Fragment>
           ))}
         </div>
@@ -151,10 +172,14 @@ export function SectionList(props: SectionListProps) {
           : null}
       </div>
       <footer className={styles.status}>
+        {props.counts.excess > 0 ? <button className={styles.issue} type="button" aria-pressed={props.mode === 'excess'} onClick={() => props.onMode(props.mode === 'excess' ? 'not-done' : 'excess')}>
+          <span>Превышена норма занятий</span><b>{props.counts.excess}</b><span aria-hidden="true">→</span>
+        </button> : null}
         {props.counts['no-teacher'] > 0 ? <button className={styles.issue} type="button" aria-pressed={props.mode === 'no-teacher'} onClick={() => props.onMode(props.mode === 'no-teacher' ? 'not-done' : 'no-teacher')}>
           <span>Нужен преподаватель</span><b>{props.counts['no-teacher']}</b><span aria-hidden="true">→</span>
-        </button> : <span>Все секции с преподавателем</span>}
+        </button> : props.counts.excess === 0 ? <span>Все секции с преподавателем</span> : null}
       </footer>
+      </div>
     </aside>
   );
 }

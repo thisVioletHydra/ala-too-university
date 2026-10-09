@@ -57,14 +57,14 @@ export function SlotCell(props: SlotCellProps) {
       tabIndex={props.tabStop ? 0 : -1}
       onPointerOver={props.onPoint}
       onFocus={(event) => {
-        if (!event.target.matches(':focus-visible')) return;
+        if (event.target.matches(':focus-visible') === null || event.target.matches(':focus-visible') === undefined) return;
+
         event.stopPropagation();
         props.onFocus();
       }}
       onClick={props.onDrop}
     >
       {props.children}
-      {home ? <span className={styles.origin}><strong>Исходное место</strong><span>Занятие в переносе</span></span> : null}
       {over && advice ? <DropHint ok={advice.ok} remove={advice.text === 'Убрать'} anchor={anchor} /> : null}
       {props.unavailable && board.advice.size === 0 ? <span className={styles.unavailable}>Преподаватель недоступен</span> : null}
       {tip ? <ConflictTip text={tip} anchor={anchor} /> : null}
@@ -80,11 +80,13 @@ function DropHint(props: { ok: boolean, remove: boolean, anchor: RefObject<HTMLD
       const cell = props.anchor.current;
       const label = hint.current;
       if (!cell || !label) return;
+
       const rect = cell.getBoundingClientRect();
       label.style.left = `${rect.left + rect.width / 2}px`;
       label.style.top = `${rect.top + rect.height / 2}px`;
       label.style.maxWidth = `${Math.max(0, rect.width - 16)}px`;
     }
+
     place();
     window.addEventListener('scroll', place, true);
     window.addEventListener('resize', place);

@@ -1,18 +1,19 @@
-'use client'
+'use client';
 
-import { useDroppable } from '@dnd-kit/core'
-import { ChevronDown, CircleCheck, Search, Undo2, X } from 'lucide-react'
-import { useMemo, useState } from 'react'
-import { courseHue, plural, type Catalog } from '@/lib/schedule/catalog'
-import type { Course, Section } from '@/lib/schedule/types'
-import { cn } from '@/lib/utils'
-import { Kbd } from './kbd'
-import { SectionCard } from './section-card'
+import { useDroppable } from '@dnd-kit/core';
+import { ChevronDown, CircleCheck, Search, Undo2, X } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { courseHue, plural } from '@/lib/schedule/catalog';
+import type { Catalog } from '@/lib/schedule/catalog';
+import type { Course, Section } from '@/lib/schedule/types';
+import { cn } from '@/lib/utils';
+import { Kbd } from './kbd';
+import { SectionCard } from './section-card';
 
-export const UNASSIGN_ZONE_ID = 'unassign-zone'
-export const SEARCH_INPUT_ID = 'section-search'
+export const UNASSIGN_ZONE_ID = 'unassign-zone';
+export const SEARCH_INPUT_ID = 'section-search';
 
-type Tab = 'todo' | 'done' | 'all'
+type Tab = 'todo' | 'done' | 'all';
 
 interface Props {
   catalog: Catalog
@@ -39,40 +40,37 @@ function initials(shortName: string) {
     .filter(Boolean)
     .map((p) => p[0])
     .join('')
-    .slice(0, 2)
+    .slice(0, 2);
 }
 
-export function SectionPanel({
-  catalog,
-  placedBySection,
-  teacherFilter,
-  pickedSectionId,
-  onPick,
-  isDraggingLesson,
-}: Props) {
-  const [query, setQuery] = useState('')
-  const [tab, setTab] = useState<Tab>('todo')
-  const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
-  const [cursor, setCursor] = useState<string | null>(null)
-  const { setNodeRef, isOver } = useDroppable({ id: UNASSIGN_ZONE_ID })
+export function SectionPanel({ catalog, placedBySection, teacherFilter, pickedSectionId, onPick, isDraggingLesson, }: Props) {
+  const [query, setQuery] = useState('');
+  const [tab, setTab] = useState<Tab>('todo');
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const [cursor, setCursor] = useState<string | null>(null);
+  const { setNodeRef, isOver } = useDroppable({ id: UNASSIGN_ZONE_ID });
 
   const { groups, counts } = useMemo(() => {
-    const q = query.trim().toLowerCase()
-    const isDone = (s: Section) => (placedBySection.get(s.id) ?? 0) >= s.requiredLessonsPerWeek
+    const q = query.trim().toLowerCase();
+    const isDone = (s: Section) => (placedBySection.get(s.id) ?? 0) >= s.requiredLessonsPerWeek;
     const matching = catalog.data.sections.filter((section) => {
-      if (teacherFilter !== 'all' && section.teacherId !== teacherFilter) return false
-      if (!q) return true
-      const course = catalog.courses.get(section.courseId)
-      const teacher = section.teacherId ? catalog.teachers.get(section.teacherId) : undefined
-      return [section.code, course?.name, course?.code, teacher?.name].some((v) => v?.toLowerCase().includes(q))
-    })
-    const byTab = (s: Section) => (tab === 'all' ? true : tab === 'done' ? isDone(s) : !isDone(s))
+      if (teacherFilter !== 'all' && section.teacherId !== teacherFilter) return false;
 
-    const result: Group[] = []
+      if (q === null || q === undefined) return true;
+
+      const course = catalog.courses.get(section.courseId);
+      const teacher = section.teacherId ? catalog.teachers.get(section.teacherId) : undefined;
+
+      return [section.code, course?.name, course?.code, teacher?.name].some((v) => v?.toLowerCase().includes(q));
+    });
+    const byTab = (s: Section) => (tab === 'all' ? true : tab === 'done' ? isDone(s) : !isDone(s));
+
+    const result: Group[] = [];
     for (const course of catalog.data.courses) {
-      const visible = matching.filter((s) => s.courseId === course.id && byTab(s))
-      if (visible.length === 0) continue
-      const all = catalog.data.sections.filter((s) => s.courseId === course.id)
+      const visible = matching.filter((s) => s.courseId === course.id && byTab(s));
+      if (visible.length === 0) continue;
+
+      const all = catalog.data.sections.filter((s) => s.courseId === course.id);
       result.push({
         course,
         hue: courseHue(catalog, course.id),
@@ -81,7 +79,7 @@ export function SectionPanel({
         withoutTeacher: all.filter((s) => !s.teacherId).length,
         placed: all.reduce((sum, s) => sum + Math.min(placedBySection.get(s.id) ?? 0, s.requiredLessonsPerWeek), 0),
         required: all.reduce((sum, s) => sum + s.requiredLessonsPerWeek, 0),
-      })
+      });
     }
     return {
       groups: result,
@@ -90,8 +88,8 @@ export function SectionPanel({
         done: matching.filter(isDone).length,
         all: matching.length,
       },
-    }
-  }, [catalog, placedBySection, query, tab, teacherFilter])
+    };
+  }, [catalog, placedBySection, query, tab, teacherFilter]);
 
   const navKeys = useMemo(
     () =>
@@ -100,65 +98,71 @@ export function SectionPanel({
         ...(collapsed.has(g.course.id) ? [] : g.sections.map((s) => `s:${s.id}`)),
       ]),
     [groups, collapsed],
-  )
-  const roving = cursor && navKeys.includes(cursor) ? cursor : navKeys[0]
+  );
+  const roving = cursor && navKeys.includes(cursor) ? cursor : navKeys[0];
 
   const toggleGroup = (courseId: string, open?: boolean) =>
     setCollapsed((prev) => {
-      const next = new Set(prev)
-      const shouldOpen = open ?? next.has(courseId)
-      if (shouldOpen) next.delete(courseId)
-      else next.add(courseId)
-      return next
-    })
+      const next = new Set(prev);
+      const shouldOpen = open ?? next.has(courseId);
+      if (shouldOpen) next.delete(courseId);
+      else next.add(courseId);
+      return next;
+    });
 
   const focusNav = (key: string | undefined, root: HTMLElement) => {
-    if (key) root.querySelector<HTMLElement>(`[data-nav="${key}"]`)?.focus()
-  }
+    if (key) root.querySelector<HTMLElement>(`[data-nav="${key}"]`)?.focus();
+  };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLUListElement>) => {
-    const key = (e.target as HTMLElement).dataset.nav
-    if (!key || e.altKey || e.ctrlKey || e.metaKey) return
-    const index = navKeys.indexOf(key)
-    const root = e.currentTarget
-    const id = key.slice(2)
-    const isGroup = key.startsWith('g:')
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLUListElement>) => {
+    const key = (event.target as HTMLElement).dataset.nav;
+    if (!key || event.altKey || event.ctrlKey || event.metaKey) return;
+
+    const index = navKeys.indexOf(key);
+    const root = event.currentTarget;
+    const id = key.slice(2);
+    const isGroup = key.startsWith('g:');
     const go = (k: string | undefined) => {
-      e.preventDefault()
-      focusNav(k, root)
-    }
+      event.preventDefault();
+      focusNav(k, root);
+    };
 
-    switch (e.key) {
+    switch (event.key) {
       case 'ArrowDown':
-        return go(navKeys[index + 1])
+        return go(navKeys[index + 1]);
       case 'ArrowUp':
-        return go(navKeys[index - 1])
+        return go(navKeys[index - 1]);
       case 'Home':
-        return go(navKeys[0])
+        return go(navKeys[0]);
       case 'End':
-        return go(navKeys[navKeys.length - 1])
+        return go(navKeys[navKeys.length - 1]);
       case 'ArrowLeft':
-        e.preventDefault()
-        if (isGroup) return toggleGroup(id, false)
-        return go(`g:${catalog.sections.get(id)?.courseId}`)
+        event.preventDefault();
+        if (isGroup) return toggleGroup(id, false);
+
+        return go(`g:${catalog.sections.get(id)?.courseId}`);
       case 'ArrowRight':
-        e.preventDefault()
-        if (isGroup && collapsed.has(id)) return toggleGroup(id, true)
-        if (isGroup) return go(navKeys[index + 1])
-        return
+        event.preventDefault();
+        if (isGroup && collapsed.has(id)) return toggleGroup(id, true);
+
+        if (isGroup) return go(navKeys[index + 1]);
+
+        return;
       case 'Enter':
       case ' ':
-        if (isGroup) return
-        e.preventDefault()
-        return onPick(id, true)
+        if (isGroup) return;
+
+        event.preventDefault();
+
+        return onPick(id, true);
     }
-  }
+  };
 
   const tabs: { id: Tab; label: string }[] = [
     { id: 'todo', label: 'Осталось' },
     { id: 'done', label: 'Готово' },
     { id: 'all', label: 'Все' },
-  ]
+  ];
 
   return (
     <aside
@@ -182,14 +186,14 @@ export function SectionPanel({
             id={SEARCH_INPUT_ID}
             type="search"
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Escape' && query) {
-                e.stopPropagation()
-                setQuery('')
-              } else if (e.key === 'ArrowDown') {
-                e.preventDefault()
-                focusNav(roving, e.currentTarget.closest('aside')!)
+            onChange={(event) => setQuery(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === 'Escape' && query) {
+                event.stopPropagation();
+                setQuery('');
+              } else if (event.key === 'ArrowDown') {
+                event.preventDefault();
+                focusNav(roving, event.currentTarget.closest('aside')!);
               }
             }}
             placeholder="Предмет, код или преподаватель"
@@ -240,16 +244,16 @@ export function SectionPanel({
         className="flex flex-1 flex-col gap-1 overflow-y-auto px-3 pb-3"
         aria-label="Предметы и их секции. Стрелки — двигаться, Enter — взять секцию."
         onKeyDown={handleKeyDown}
-        onFocus={(e) => {
-          const key = (e.target as HTMLElement).dataset.nav
-          if (key) setCursor(key)
+        onFocus={(event) => {
+          const key = (event.target as HTMLElement).dataset.nav;
+          if (key) setCursor(key);
         }}
       >
         {groups.map((group) => {
-          const open = !collapsed.has(group.course.id)
-          const groupKey = `g:${group.course.id}`
-          const listId = `group-${group.course.id}`
-          const teachers = group.teacherIds.map((id) => catalog.teachers.get(id)).filter(Boolean)
+          const open = !collapsed.has(group.course.id);
+          const groupKey = `g:${group.course.id}`;
+          const listId = `group-${group.course.id}`;
+          const teachers = group.teacherIds.map((id) => catalog.teachers.get(id)).filter(Boolean);
           return (
             <li key={group.course.id} className="flex flex-col">
               <button
@@ -305,7 +309,7 @@ export function SectionPanel({
                   style={{ borderColor: `oklch(0.88 0.05 ${group.hue})` }}
                 >
                   {group.sections.map((section) => {
-                    const key = `s:${section.id}`
+                    const key = `s:${section.id}`;
                     return (
                       <li key={section.id} className="relative">
                         <span
@@ -322,12 +326,12 @@ export function SectionPanel({
                           onPick={() => onPick(section.id, false)}
                         />
                       </li>
-                    )
+                    );
                   })}
                 </ul>
               )}
             </li>
-          )
+          );
         })}
         {groups.length === 0 && (
           <li className="flex flex-col items-center gap-2 px-6 py-12 text-center text-sm text-muted-foreground">
@@ -366,5 +370,5 @@ export function SectionPanel({
         </div>
       )}
     </aside>
-  )
+  );
 }

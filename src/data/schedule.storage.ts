@@ -15,6 +15,12 @@ export type StoredSchedule = {
 
 export function readStoredSchedule(): StoredSchedule | null {
   const raw = localStorage.getItem(STORAGE_KEY);
+  if (localStorage.getItem('ala-too-section-teacher-v2') !== 'ready') {
+    const empty: StoredSchedule = { dataset: 'mock', lessons: [], past: [], future: [] };
+    writeStoredSchedule(empty);
+    localStorage.setItem('ala-too-section-teacher-v2', 'ready');
+    return empty;
+  }
   if (raw === null) return null;
 
   try {
@@ -61,7 +67,7 @@ function asLesson(value: unknown): Lesson {
   return {
     id: asString(item.id),
     sectionId: asString(item.sectionId),
-    teacherId: asString(item.teacherId),
+    teacherId: item.teacherId === '' ? '' : asString(item.teacherId),
     roomId: asString(item.roomId),
     day: asWeekDay(item.day),
     timeSlotId: asString(item.timeSlotId),

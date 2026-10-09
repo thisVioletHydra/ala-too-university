@@ -1,6 +1,6 @@
 import type { RoomType } from '#schedule/types.ts';
 
-import { useDraggable } from '@dnd-kit/core';
+import { useDraggable, useDroppable } from '@dnd-kit/core';
 import { useBoard } from '#app/providers.tsx';
 
 import styles from '#ui/lesson-card/lesson-card.module.css';
@@ -22,6 +22,7 @@ export type LessonCardProps = LessonFields & {
   highlighted: boolean
   dimmed?: boolean
   compact?: boolean
+  listView?: boolean
   onGrab: () => void
   onDrop: () => void
 };
@@ -91,6 +92,7 @@ type LessonFaceProps = LessonFields & {
   highlighted: boolean
   dimmed?: boolean
   compact?: boolean
+  listView?: boolean
   overlay: boolean
   held: boolean
   nodeRef?: (element: HTMLElement | null) => void
@@ -106,16 +108,14 @@ function LessonFace(props: LessonFaceProps) {
   const flash = board.flash;
   const roomTypeName = props.roomType === 'COMPUTER_LAB' ? 'Компьютерная лаборатория' : 'Учебная аудитория';
   const flashed = props.lessonId !== undefined && flash.lessonId === props.lessonId;
+  const carried = board.ghost ?? board.hold.hand;
+  const actions = !props.overlay && props.lessonId && !board.repeat && carried?.kind === 'lesson' && carried.lessonId === props.lessonId;
   const body = (
     <>
       <span className={styles.rail} aria-hidden="true" />
       <span className={styles.head}>
         <span className={styles.chip}>{props.courseCode}</span>
         <span className={styles.no}>{sectionNo(props.courseCode, props.code)}</span>
-      </span>
-      <span className={styles.name}>{props.courseName}</span>
-      <span className={styles.foot}>
-        <span className={styles.who}>{props.teacherName}</span>
         <span
           className={styles.room}
           title={`${roomTypeName}: ${props.roomName}`}
@@ -125,11 +125,17 @@ function LessonFace(props: LessonFaceProps) {
           {props.roomName}
         </span>
       </span>
+      <span className={styles.name}>{props.courseName}</span>
+      <span className={styles.foot}>
+        <span className={styles.who}>{props.teacherName === 'Нужен преподаватель' ? <span className={styles.teacherWarning} aria-hidden="true">!</span> : null}{props.teacherName}</span>
+      </span>
     </>
   );
   const shared = {
     className: styles.card,
     'data-compact': props.compact ? 'yes' : 'no',
+    'data-list-view': props.listView ? 'yes' : 'no',
+    'data-needs-teacher': props.teacherName === 'Нужен преподаватель' ? 'yes' : 'no',
     'data-course': props.courseId,
     'data-highlighted': props.highlighted ? 'yes' : 'no',
     'data-dimmed': props.dimmed ? 'yes' : 'no',
@@ -143,7 +149,7 @@ function LessonFace(props: LessonFaceProps) {
   }
 
   return (
-    <div className={styles.wrap} data-held={props.held ? 'yes' : 'no'} data-dimmed={props.dimmed ? 'yes' : 'no'}>
+    <div className={styles.wrap} data-held={props.held ? 'yes' : 'no'} data-actions={actions ? 'yes' : 'no'} data-dimmed={props.dimmed ? 'yes' : 'no'}>
     <button
       type="button"
       ref={props.nodeRef}
@@ -151,7 +157,7 @@ function LessonFace(props: LessonFaceProps) {
       {...props.listeners}
       {...props.attributes}
       data-lesson-id={props.lessonId}
-      title={props.compact ? `${props.courseName} · ${props.code} · ${props.teacherName} · ${props.roomName}` : undefined}
+      title={`${props.courseName} · ${props.code} · ${props.teacherName} · ${props.roomName}`}
       tabIndex={-1}
       onClick={(event) => {
         if (event.detail === 0) return;
@@ -161,6 +167,28 @@ function LessonFace(props: LessonFaceProps) {
     >
       {body}
     </button>
+    {actions ? <SourcePlaceholder lessonId={props.lessonId!} code={props.code} /> : null}
     </div>
   );
+}
+
+export function SourcePlaceholder(props: { lessonId: string; code: string; strip?: boolean }) {
+  return <div className={styles.actions} data-strip={props.strip ? 'yes' : 'no'} onClick={(event) => event.stopPropagation()}>
+    <CardAction lessonId={props.lessonId} action="cancel" label={props.strip ? props.code : 'Исходное место'} />
+    <CardAction lessonId={props.lessonId} action="edit" label="Редактировать" />
+  </div>;
+}
+
+function CardAction(props: { lessonId: string; action: 'edit' | 'cancel'; label: string }) {
+  const board = useBoard();
+  const drop = useDroppable({ id: `card-action:${props.lessonId}:${props.action}`, data: { kind: 'card-action', lessonId: props.lessonId, action: props.action } });
+  return <button ref={drop.setNodeRef} type="button" className={styles.action} data-action={props.action} data-over={drop.isOver ? 'yes' : 'no'} onClick={(event) => {
+    event.stopPropagation();
+    if (board.skipClick()) return;
+    if (props.action === 'edit') board.setEditor({ mode: 'edit', lessonId: props.lessonId });
+    else {
+      board.setHold({ hand: null, aim: board.hold.aim, overKey: null, overList: false });
+      if (props.action === 'cancel') window.dispatchEvent(new Event('schedule:cancel-hand'));
+    }
+  }} aria-label={props.action === 'cancel' ? 'Отменить перенос' : props.label} title={props.action === 'cancel' ? 'Отменить перенос' : props.label}>{props.action === 'edit' ? <svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.4" aria-hidden="true"><path d="m3 10 7-7 3 3-7 7-4 1 1-4ZM9 4l3 3" strokeLinejoin="round" /></svg> : props.label}</button>;
 }

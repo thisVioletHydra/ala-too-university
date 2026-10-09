@@ -1,5 +1,7 @@
 import type { Room, Teacher } from '#schedule/types.ts';
+
 import { Select } from '#ui/select/select.tsx';
+
 import styles from '#ui/filters/filters.module.css';
 
 type FiltersProps = {

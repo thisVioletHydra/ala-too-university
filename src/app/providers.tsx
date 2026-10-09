@@ -1,3 +1,4 @@
+import { sectionTeacher } from '#schedule/section-teacher.ts';
 import type { DragEndEvent, DragOverEvent, DragStartEvent } from '@dnd-kit/core';
 import type { SlotAdvice } from '#schedule/conflicts.ts';
 import type { ScheduleCatalog, WeekDay } from '#schedule/types.ts';
@@ -10,7 +11,7 @@ import { moveLesson } from '#features/move-lesson.ts';
 import { unassignLesson } from '#features/unassign-lesson.ts';
 import { useSchedule } from '#app/schedule.store.ts';
 import { explainSlot } from '#schedule/conflicts.ts';
-import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
 export type EditorRequest =
   | {
@@ -22,7 +23,8 @@ export type EditorRequest =
     roomId: string | null
     text: string | null
   }
-  | { mode: 'edit', lessonId: string };
+  | { mode: 'edit', lessonId: string }
+  | { mode: 'section', sectionId: string };
 
 export type ActiveDrag =
   | { kind: 'section', sectionId: string, teacherId?: string, roomId?: string }
@@ -88,9 +90,17 @@ export function Providers(props: { catalog: ScheduleCatalog, children: ReactNode
   const [active, setActive] = useState<ActiveDrag | null>(null);
   const [overKey, setOverKey] = useState<string | null>(null);
   const [overUnassign, setOverUnassign] = useState(false);
-  const [editor, setEditor] = useState<EditorRequest | null>(null);
+  const [editor, updateEditor] = useState<EditorRequest | null>(null);
   const [hold, setHold] = useState<Hold>(emptyHold);
   const [landing, setLanding] = useState<Landing | null>(null);
+  const setEditor = useCallback((request: EditorRequest | null) => {
+    setHold((current) => ({ ...current, hand: null, overKey: null, overList: false }));
+    setActive(null);
+    setOverKey(null);
+    setOverUnassign(false);
+    setLanding(null);
+    updateEditor(request);
+  }, []);
   const [flash, setFlash] = useState<Flash>(quietFlash);
   const flashTimer = useRef(0);
 
@@ -105,10 +115,12 @@ export function Providers(props: { catalog: ScheduleCatalog, children: ReactNode
       repeatKey.current = event.shiftKey;
       setRepeat(event.shiftKey);
     }
+
     function reset(): void {
       repeatKey.current = false;
       setRepeat(false);
     }
+
     window.addEventListener('keydown', update, true);
     window.addEventListener('keyup', update, true);
     window.addEventListener('pointerdown', update, true);
@@ -160,6 +172,7 @@ export function Providers(props: { catalog: ScheduleCatalog, children: ReactNode
       const y = event.activatorEvent.clientY + event.delta.y;
       if (x < bounds.left || x > bounds.right || y < bounds.top || y > bounds.bottom) leftSidebar.current = true;
     }
+
     const data = event.over?.data.current;
     if (!isRecord(data)) {
       setOverKey(null);
@@ -195,6 +208,12 @@ export function Providers(props: { catalog: ScheduleCatalog, children: ReactNode
     setOverUnassign(false);
     if (!current || !isRecord(data)) return;
 
+    if (data.kind === 'card-action' && current.kind === 'lesson' && data.lessonId === current.lessonId) {
+      if (data.action === 'edit') setEditor({ mode: 'edit', lessonId: current.lessonId });
+      else if (data.action === 'delete') unassignLesson(current.lessonId);
+      return;
+    }
+
     if (data.kind === 'unassign') {
       if (current.kind === 'lesson') unassignLesson(current.lessonId);
 
@@ -202,6 +221,15 @@ export function Providers(props: { catalog: ScheduleCatalog, children: ReactNode
     }
 
     if (data.kind !== 'slot' || !isDay(data.day) || typeof data.timeSlotId !== 'string') return;
+
+    if (current.kind === 'lesson' && !repeatKey.current && !current.copy) {
+      const cell = document.querySelector<HTMLElement>(`[data-slot="${CSS.escape(slotKey(data.day, data.timeSlotId))}"]`);
+      const reorderTarget = cell?.dataset.reorderTarget;
+      if (reorderTarget) {
+        useSchedule.getState().swapLessons(current.lessonId, reorderTarget);
+        return;
+      }
+    }
 
     if (repeatKey.current && removeMatching(current, { kind: 'slot', day: data.day, timeSlotId: data.timeSlotId })) return;
 
@@ -229,13 +257,16 @@ export function Providers(props: { catalog: ScheduleCatalog, children: ReactNode
     if (current.copy || repeatKey.current) {
       if (repeatKey.current) {
         const source = useSchedule.getState().lessons.find((item) => item.id === current.lessonId);
-        if (!source) return;
+        if (source === null || source === undefined) return;
+
         const outcome = assignLesson({ sectionId: source.sectionId, teacherId: source.teacherId, day: data.day, timeSlotId: data.timeSlotId });
         if (outcome.type === 'edit') {
           setEditor({ mode: 'create', sectionId: source.sectionId, day: data.day, timeSlotId: data.timeSlotId, teacherId: outcome.teacherId, roomId: outcome.roomId, text: outcome.text });
         }
+
         return;
       }
+
       copyLesson({ lessonId: current.lessonId, day: data.day, timeSlotId: data.timeSlotId });
 
       return;
@@ -272,10 +303,13 @@ export function Providers(props: { catalog: ScheduleCatalog, children: ReactNode
     const sectionId = hand.kind === 'section' ? hand.sectionId : source?.sectionId;
     const existing = lessons.find((item) => item.sectionId === sectionId && item.day === target.day && item.timeSlotId === target.timeSlotId);
     if (!existing) return false;
+
     if (source && source.id === existing.id && hold.hand) {
       setHold((current) => ({ ...current, hand: { kind: 'section', sectionId: source.sectionId, teacherId: source.teacherId, roomId: source.roomId, originLessonId: source.id } }));
     }
+
     unassignLesson(existing.id);
+
     return true;
   }
 
@@ -299,6 +333,7 @@ export function Providers(props: { catalog: ScheduleCatalog, children: ReactNode
     const origin = useSchedule.getState().lessons.find((item) => item.id === originId);
     if (!repeatKey.current && origin?.day === target.day && origin.timeSlotId === target.timeSlotId) {
       setHold((current) => ({ ...current, hand: null, overKey: null, overList: false }));
+
       return;
     }
 
@@ -325,7 +360,7 @@ export function Providers(props: { catalog: ScheduleCatalog, children: ReactNode
           roomId: outcome.roomId,
           text: outcome.text,
         });
-        if (!repeatKey.current) release({ kind: 'slot', day: target.day, timeSlotId: target.timeSlotId });
+        if (repeatKey.current === null || repeatKey.current === undefined) release({ kind: 'slot', day: target.day, timeSlotId: target.timeSlotId });
 
         return;
       }
@@ -336,8 +371,10 @@ export function Providers(props: { catalog: ScheduleCatalog, children: ReactNode
           setHold((current) => ({ ...current, hand: { kind: 'section', sectionId: created.sectionId, teacherId: created.teacherId, originLessonId: hand.originLessonId } }));
           mark({ lessonId: created.id, sectionId: hand.sectionId });
         }
+
         return;
       }
+
       release(created
         ? { kind: 'card', lessonId: created.id }
         : { kind: 'slot', day: target.day, timeSlotId: target.timeSlotId });
@@ -347,12 +384,14 @@ export function Providers(props: { catalog: ScheduleCatalog, children: ReactNode
 
     if (repeatKey.current) {
       const source = useSchedule.getState().lessons.find((item) => item.id === hand.lessonId);
-      if (!source) return;
+      if (source === null || source === undefined) return;
+
       const before = new Set(useSchedule.getState().lessons.map((item) => item.id));
       const outcome = assignLesson({ sectionId: source.sectionId, teacherId: source.teacherId, day: target.day, timeSlotId: target.timeSlotId });
       if (outcome.type === 'edit') {
         setEditor({ mode: 'create', sectionId: source.sectionId, day: target.day, timeSlotId: target.timeSlotId, teacherId: outcome.teacherId, roomId: outcome.roomId, text: outcome.text });
       }
+
       if (outcome.type === 'placed') {
         const created = useSchedule.getState().lessons.find((item) => !before.has(item.id));
         if (created) {
@@ -360,6 +399,7 @@ export function Providers(props: { catalog: ScheduleCatalog, children: ReactNode
           mark({ lessonId: created.id, sectionId: created.sectionId });
         }
       }
+
       return;
     }
 
@@ -399,7 +439,11 @@ export function Providers(props: { catalog: ScheduleCatalog, children: ReactNode
     }}>
       <DndContext
         sensors={sensors}
-        collisionDetection={pointerWithin}
+        collisionDetection={(args) => {
+          const hits = pointerWithin(args);
+          const action = hits.find((hit) => String(hit.id).startsWith('card-action:'));
+          return action ? [action] : hits;
+        }}
         onDragStart={onDragStart}
         onDragOver={onDragOver}
         onDragEnd={onDragEnd}
@@ -442,7 +486,7 @@ function adviceMap(
 
   const teacherId = lesson
     ? lesson.teacherId
-    : active.kind === 'section' ? active.teacherId ?? section.teacherId ?? remembered[section.id] ?? null : null;
+    : active.kind === 'section' ? sectionTeacher(section, lessons, remembered) : null;
   const roomId = repeat ? null : lesson ? lesson.roomId : active.kind === 'section' ? active.roomId ?? null : null;
   const excludeLessonId = active.kind === 'lesson' && !active.copy && !repeat ? active.lessonId : undefined;
 
@@ -452,6 +496,7 @@ function adviceMap(
         map.set(slotKey(day.id, timeSlot.id), { ok: true, text: 'Убрать', teacherId, roomId, needsChoice: false });
         continue;
       }
+
       map.set(slotKey(day.id, timeSlot.id), explainSlot({
         section,
         day: day.id,
@@ -482,7 +527,7 @@ function dragFace(
     const section = catalog.sections.find((item) => item.id === active.sectionId);
     if (section === null || section === undefined) return null;
 
-    const teacherId = section.teacherId ?? remembered[section.id] ?? null;
+    const teacherId = sectionTeacher(section, lessons, remembered);
 
     return {
       code: section.code,

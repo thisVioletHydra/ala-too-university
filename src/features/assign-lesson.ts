@@ -1,3 +1,4 @@
+import { sectionTeacher } from '#schedule/section-teacher.ts';
 import type { WeekDay } from '#schedule/types.ts';
 
 import { useSchedule } from '#app/schedule.store.ts';
@@ -28,8 +29,7 @@ export function assignLesson(input: AssignRequest): AssignOutcome {
   const section = catalog.sections.find((item) => item.id === input.sectionId);
   if (section === null || section === undefined) return { type: 'rejected', text: 'Секция не найдена' };
 
-  const remembered = rememberedTeachers[section.id] ?? null;
-  const teacherId = input.teacherId ?? section.teacherId ?? remembered;
+  const teacherId = sectionTeacher(section, lessons, rememberedTeachers);
   const advice = explainSlot({
     section,
     day: input.day,
@@ -46,7 +46,7 @@ export function assignLesson(input: AssignRequest): AssignOutcome {
     return { type: 'rejected', text: advice.text ?? 'Этот слот занят' };
   }
 
-  if (advice.needsChoice || !advice.teacherId || !advice.roomId) {
+  if (advice.needsChoice || advice.teacherId === null || !advice.roomId) {
     return {
       type: 'edit',
       teacherId: advice.teacherId,

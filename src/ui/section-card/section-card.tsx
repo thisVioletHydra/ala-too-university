@@ -17,6 +17,8 @@ function studentsWord(count: number): string {
 }
 
 function progressPhrase(state: ProgressState, placed: number, required: number): string {
+  if (placed > required) return `Дополнительно: ${placed - required}`;
+
   if (state === 'done') return 'Поставлено полностью';
 
   if (state === 'empty') return 'Ещё не начинали';
@@ -27,6 +29,7 @@ function progressPhrase(state: ProgressState, placed: number, required: number):
 }
 
 type SectionFields = {
+  showCourse?: boolean
   section: Section
   courseName: string
   courseCode: string
@@ -108,7 +111,10 @@ type SectionFaceProps = SectionFields & {
 };
 
 function SectionFace(props: SectionFaceProps) {
+  const board = useBoard();
   const progress = sectionProgress(props.section, props.lessons);
+  const missingTeacherCount = props.lessons.filter((lesson) => lesson.sectionId === props.section.id && !lesson.teacherId).length;
+  const needsTeacher = props.teacherName === null;
   const flashed = useBoard().flash.sectionId === props.section.id;
 
   return (
@@ -117,6 +123,9 @@ function SectionFace(props: SectionFaceProps) {
       className={styles.card}
       aria-label={`${props.courseName}, ${props.section.code}, ${props.teacherName ?? 'Без преподавателя'}. ${progressPhrase(progress.state, progress.placed, progress.required)}`}
       data-state={progress.state}
+      data-show-course={props.showCourse ? 'yes' : 'no'}
+      data-needs-teacher={needsTeacher ? 'yes' : 'no'}
+      data-excess={progress.placed > progress.required ? 'yes' : 'no'}
       data-course={props.section.courseId}
       data-highlighted={props.highlighted ? 'yes' : 'no'}
       data-dragging={props.dragging ? 'yes' : 'no'}
@@ -132,7 +141,8 @@ function SectionFace(props: SectionFaceProps) {
     >
       <span className={styles.rail} aria-hidden="true" />
       <div className={styles.head}>
-        <span className={styles.teacher} data-missing={props.teacherName === null ? 'yes' : 'no'}>{props.teacherName ?? 'Без преподавателя'}</span>
+        {!props.overlay && props.dragging ? <button type="button" className={styles.editSection} aria-label={`Редактировать секцию ${props.section.code}`} title="Редактировать секцию" onPointerDown={(event) => event.stopPropagation()} onClick={(event) => { event.stopPropagation(); board.setEditor({ mode: 'section', sectionId: props.section.id }); }}><svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.4" aria-hidden="true"><path d="m3 10 7-7 3 3-7 7-4 1 1-4ZM9 4l3 3" /></svg></button> : null}
+        <span className={styles.teacher} data-missing={props.teacherName === null ? 'yes' : 'no'}>{props.teacherName === null ? <span className={styles.teacherWarning} aria-hidden="true">!</span> : null}{props.teacherName ?? 'Нужен преподаватель'}</span>
         <span className={styles.chip}>{props.courseCode}</span>
         <span className={styles.no}>{sectionNo(props.courseCode, props.section.code)}</span>
         <span className={styles.count} title={`Поставлено ${progress.placed} из ${progress.required}`}>
@@ -145,12 +155,17 @@ function SectionFace(props: SectionFaceProps) {
       <p className={styles.meta}>
         <span className={styles.students}>{props.section.studentsCount} {studentsWord(props.section.studentsCount)}</span>
       </p>
+      {needsTeacher && props.teacherName !== null ? <span className={styles.teacherNotice}><span className={styles.teacherWarning} aria-hidden="true">!</span>{missingTeacherCount} {lessonsWord(missingTeacherCount)} без преподавателя</span> : null}
       <div className={styles.foot}>
         <span className={styles.segments} role="progressbar" aria-label="Занятия секции" aria-valuemin={0} aria-valuemax={Math.max(progress.required, progress.placed)} aria-valuenow={progress.placed}>
           {Array.from({ length: Math.max(progress.required, progress.placed) }, (_, index) => <i key={index} data-filled={index < progress.placed ? 'yes' : 'no'} data-extra={index >= progress.required ? 'yes' : 'no'} />)}
         </span>
-        <span className={styles.phrase}>{progressPhrase(progress.state, progress.placed, progress.required)}</span>
+        <span className={styles.phrase}>
+          {progress.placed > progress.required ? <span aria-hidden="true">⚠ </span> : null}
+          {progressPhrase(progress.state, progress.placed, progress.required)}
+        </span>
       </div>
+      {progress.placed > progress.required ? <p className={styles.excessCount}>{progress.placed} занятий · Норма {progress.required} в неделю</p> : null}
     </article>
   );
 }

@@ -7,22 +7,26 @@ type Hotkeys = {
 
 export function bindHotkeys(handlers: Hotkeys): () => void {
   function onKeyDown(event: KeyboardEvent): void {
+    if (event.defaultPrevented) return;
     const meta = event.metaKey || event.ctrlKey;
     if (meta && event.key.toLowerCase() === 'z' && !event.shiftKey) {
       event.preventDefault();
       handlers.undo();
+
       return;
     }
 
     if (meta && event.key.toLowerCase() === 'z' && event.shiftKey) {
       event.preventDefault();
       handlers.redo();
+
       return;
     }
 
     if (meta && event.key.toLowerCase() === 'k') {
       event.preventDefault();
       handlers.focusSearch();
+
       return;
     }
 

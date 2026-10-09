@@ -1,9 +1,11 @@
 import type { ConflictResult, Lesson, LessonEdit, LessonMove, Placement, ScheduleCatalog } from '#schedule/types.ts';
 
 import { placementConflict } from '#schedule/conflicts.ts';
+import { sectionTeacher } from '#schedule/section-teacher.ts';
 import { create } from 'zustand';
 
 const historyLimit = 40;
+const previousSchedule: Partial<ScheduleStore> = import.meta.hot?.data.schedule ?? {};
 
 export type Dataset = 'mock' | 'bulk';
 
@@ -18,9 +20,12 @@ type ScheduleStore = {
   setDataset: (dataset: Dataset) => void
   replaceLessons: (lessons: Lesson[], past?: Lesson[][], future?: Lesson[][]) => void
   rememberTeacher: (sectionId: string, teacherId: string) => void
+  assignSectionTeacher: (sectionId: string, teacherId: string) => ConflictResult
   placeLesson: (placement: Placement) => ConflictResult
   moveLesson: (input: LessonMove) => ConflictResult
   unassignLesson: (lessonId: string) => void
+  clearLessons: () => void
+  swapLessons: (firstId: string, secondId: string) => void
   editLesson: (input: LessonEdit) => ConflictResult
   copyLesson: (input: LessonMove) => ConflictResult
   undo: () => void
@@ -28,12 +33,12 @@ type ScheduleStore = {
 };
 
 export const useSchedule = create<ScheduleStore>((set, get) => ({
-  catalog: null,
-  dataset: 'mock',
-  lessons: [],
-  past: [],
-  future: [],
-  rememberedTeachers: {},
+  catalog: previousSchedule.catalog ?? null,
+  dataset: previousSchedule.dataset ?? 'mock',
+  lessons: previousSchedule.lessons ?? [],
+  past: previousSchedule.past ?? [],
+  future: previousSchedule.future ?? [],
+  rememberedTeachers: previousSchedule.rememberedTeachers ?? {},
   setCatalog: (catalog) => {
     set({ catalog });
   },
@@ -48,11 +53,25 @@ export const useSchedule = create<ScheduleStore>((set, get) => ({
       rememberedTeachers: { ...get().rememberedTeachers, [sectionId]: teacherId },
     });
   },
+  assignSectionTeacher: (sectionId, teacherId) => {
+    const section = get().catalog?.sections.find((item) => item.id === sectionId);
+    if (!section) return missing();
+    if (teacherId && !section.allowedTeacherIds.includes(teacherId)) return { ok: false, kind: 'teacher-not-allowed', text: 'Преподаватель не ведёт эту секцию' };
+    const next = get().lessons.map((item) => item.sectionId === sectionId ? { ...item, teacherId } : item);
+    const result = checkSection(get, next, sectionId, teacherId);
+    if (!result.ok) return result;
+    if (next.some((item) => item.sectionId === sectionId)) commit(set, get, next);
+    get().rememberTeacher(sectionId, teacherId);
+    return { ok: true };
+  },
   placeLesson: (placement) => {
-    const result = check(get, placement);
+    const next = get().lessons.map((item) => item.sectionId === placement.sectionId ? { ...item, teacherId: placement.teacherId } : item);
+    next.push({ ...placement, id: crypto.randomUUID() });
+    const result = checkSection(get, next, placement.sectionId);
     if (!result.ok) return result;
 
-    commit(set, get, [...get().lessons, { ...placement, id: crypto.randomUUID() }]);
+    commit(set, get, next);
+    get().rememberTeacher(placement.sectionId, placement.teacherId);
 
     return { ok: true };
   },
@@ -65,29 +84,42 @@ export const useSchedule = create<ScheduleStore>((set, get) => ({
     const result = check(get, { ...current, day: input.day, timeSlotId: input.timeSlotId }, input.lessonId);
     if (!result.ok) return result;
 
-    commit(set, get, get().lessons.map((item) => {
-      if (item.id !== input.lessonId) return item;
-
-      return { ...item, day: input.day, timeSlotId: input.timeSlotId };
-    }));
+    commit(set, get, [
+      ...get().lessons.filter((item) => item.id !== input.lessonId),
+      { ...current, day: input.day, timeSlotId: input.timeSlotId },
+    ]);
 
     return { ok: true };
   },
   unassignLesson: (lessonId) => {
     commit(set, get, get().lessons.filter((item) => item.id !== lessonId));
   },
+  clearLessons: () => {
+    if (get().lessons.length === 0) return;
+    commit(set, get, []);
+  },
+  swapLessons: (firstId, secondId) => {
+    const lessons = [...get().lessons];
+    const first = lessons.findIndex((item) => item.id === firstId);
+    const second = lessons.findIndex((item) => item.id === secondId);
+    if (first < 0 || second < 0 || first === second) return;
+    if (lessons[first].day !== lessons[second].day || lessons[first].timeSlotId !== lessons[second].timeSlotId) return;
+    [lessons[first], lessons[second]] = [lessons[second], lessons[first]];
+    commit(set, get, lessons);
+  },
   editLesson: (input) => {
     const current = get().lessons.find((item) => item.id === input.lessonId);
     if (current === null || current === undefined) return missing();
 
-    const result = check(get, { ...current, teacherId: input.teacherId, roomId: input.roomId }, input.lessonId);
+    const next = get().lessons.map((item) => item.sectionId !== current.sectionId ? item : {
+      ...item,
+      teacherId: input.teacherId,
+      roomId: item.id === input.lessonId ? input.roomId : item.roomId,
+    });
+    const result = checkSection(get, next, current.sectionId);
     if (!result.ok) return result;
 
-    commit(set, get, get().lessons.map((item) => {
-      if (item.id !== input.lessonId) return item;
-
-      return { ...item, teacherId: input.teacherId, roomId: input.roomId };
-    }));
+    commit(set, get, next);
     get().rememberTeacher(current.sectionId, input.teacherId);
 
     return { ok: true };
@@ -133,6 +165,13 @@ export const useSchedule = create<ScheduleStore>((set, get) => ({
   },
 }));
 
+if (import.meta.hot) {
+  import.meta.hot.dispose((data) => {
+    const { catalog, dataset, lessons, past, future, rememberedTeachers } = useSchedule.getState();
+    data.schedule = { catalog, dataset, lessons, past, future, rememberedTeachers };
+  });
+}
+
 function check(
   get: () => ScheduleStore,
   placement: Placement,
@@ -166,4 +205,21 @@ function commit(
 
 function missing(): ConflictResult {
   return { ok: false, kind: 'section-busy', text: 'Занятие не найдено' };
+}
+
+function checkSection(get: () => ScheduleStore, lessons: Lesson[], sectionId: string, assignedTeacherId?: string): ConflictResult {
+  const catalog = get().catalog;
+  if (!catalog) return { ok: false, kind: 'no-room', text: 'Расписание ещё не загружено' };
+  const section = catalog.sections.find((item) => item.id === sectionId);
+  if (!section) return missing();
+  const teacherId = assignedTeacherId ?? sectionTeacher(section, lessons, get().rememberedTeachers);
+  const duplicate = teacherId ? catalog.sections.find((other) => other.id !== sectionId
+    && other.courseId === section.courseId
+    && sectionTeacher(other, lessons, get().rememberedTeachers) === teacherId) : null;
+  if (duplicate) return { ok: false, kind: 'teacher-not-allowed', text: `Преподаватель уже назначен на секцию ${duplicate.code} этой дисциплины` };
+  for (const placement of lessons.filter((item) => item.sectionId === sectionId)) {
+    const result = placementConflict({ placement, lessons, sections: catalog.sections, rooms: catalog.rooms, blockedSlots: catalog.blockedSlots, excludeLessonId: placement.id });
+    if (!result.ok) return { ...result, text: `Преподаватель не назначен секции: ${result.text}` };
+  }
+  return { ok: true };
 }

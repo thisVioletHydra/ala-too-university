@@ -8,7 +8,7 @@ import { slotKey, useBoard } from '#app/providers.tsx';
 import { useSchedule } from '#app/schedule.store.ts';
 import { LessonPreview } from '#ui/lesson-card/lesson-card.tsx';
 import { useEffect, useEffectEvent, useLayoutEffect, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
+import { createPortal, flushSync } from 'react-dom';
 
 import styles from '#ui/drag-ghost/drag-ghost.module.css';
 
@@ -17,7 +17,9 @@ const dropAnimation: DropAnimation = ({ active, dragOverlay }) => {
   const x = dragOverlay.rect.left + dragOverlay.rect.width / 2;
   const y = dragOverlay.rect.top + dragOverlay.rect.height / 2;
   if (active.data.current?.kind === 'section' && sidebar && x >= sidebar.left && x <= sidebar.right && y >= sidebar.top && y <= sidebar.bottom) return;
+
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
   const data = active.data.current;
   const placed = data?.kind === 'lesson' && !data.copy && typeof data.lessonId === 'string'
     ? document.querySelector<HTMLElement>(`[data-lesson-id="${CSS.escape(data.lessonId)}"]`)
@@ -28,6 +30,7 @@ const dropAnimation: DropAnimation = ({ active, dragOverlay }) => {
     placed.style.transition = 'none';
     placed.style.opacity = '0';
   }
+
   const target = placed?.getBoundingClientRect();
   const transform = getComputedStyle(dragOverlay.node).transform;
   const position = transform === 'none' ? '' : transform;
@@ -35,22 +38,23 @@ const dropAnimation: DropAnimation = ({ active, dragOverlay }) => {
     ? [{ transform: position || 'none', opacity: 1 }, { transform: `translate3d(${target.left - dragOverlay.rect.left}px, ${target.top - dragOverlay.rect.top}px, 0) ${position}`, opacity: 1 }]
     : [{ opacity: 1 }, { opacity: 0 }];
   const animation = dragOverlay.node.animate(frames, { duration: 160, easing: 'ease-out', fill: 'forwards' });
+
   return new Promise<void>((resolve) => {
     function finish(): void {
+      dragOverlay.node.style.visibility = 'hidden';
       if (placed) {
-        dragOverlay.node.style.visibility = 'hidden';
         placed.style.opacity = opacity;
         placed.getBoundingClientRect();
         placed.style.transition = transition;
       }
+
       resolve();
     }
+
     animation.onfinish = finish;
     animation.oncancel = finish;
   });
 };
-const flight = '250ms cubic-bezier(0.2, 0, 0, 1)';
-const vanish = '140ms ease-out';
 const lift = '150ms cubic-bezier(0.2, 0, 0, 1)';
 
 export function DragGhost(props: { catalog: ScheduleCatalog }) {
@@ -83,196 +87,127 @@ export function DragGhost(props: { catalog: ScheduleCatalog }) {
   );
 }
 
+type CursorState =
+  | { phase: 'idle' }
+  | { phase: 'holding', input: 'pointer' | 'keyboard' }
+  | { phase: 'paused' }
+  | { phase: 'placing', target: Landing, token: number }
+  | { phase: 'returning', token: number };
+
 export function HandCursor(props: { catalog: ScheduleCatalog }) {
   const board = useBoard();
   const lessons = useSchedule((state) => state.lessons);
   const remembered = useSchedule((state) => state.rememberedTeachers);
   const node = useRef<HTMLDivElement>(null);
+  const cursor = useRef<CursorState>({ phase: 'idle' });
+  const input = useRef<'pointer' | 'keyboard'>('pointer');
   const pointer = useRef<{ x: number, y: number } | null>(null);
-  const fromKeys = useRef(false);
-  const flying = useRef(false);
-  const lifted = useRef(false);
-  const [pinned, setPinned] = useState<ReactNode>(null);
+  const snapshot = useRef<ReactNode>(null);
+  const generation = useRef(0);
   const hand = board.hold.hand;
-  const drag = hand ? heldDrag(hand) : null;
-  const card = drag && board.editor === null ? heldCard(props.catalog, lessons, remembered, drag) : null;
-  const handKey = hand === null ? '' : `${hand.kind}:${hand.kind === 'lesson' ? hand.lessonId : hand.sectionId}`;
-  const pin = useEffectEvent(() => {
-    if (card) setPinned(card);
-  });
+  const card = hand ? heldCard(props.catalog, lessons, remembered, heldDrag(hand)) : null;
+  const complete = useEffectEvent(() => board.clearLanding());
+
+  useLayoutEffect(() => {
+    const el = node.current;
+    const token = ++generation.current;
+    if (board.editor) {
+      cursor.current = { phase: 'paused' };
+      return;
+    }
+    if (hand) {
+      const alreadyHolding = cursor.current.phase === 'holding';
+      cursor.current = { phase: 'holding', input: input.current };
+      snapshot.current = card;
+      if (board.landing) complete();
+      if (!el) return;
+      const source = sourceNode(hand)?.getBoundingClientRect();
+      const cell = document.querySelector('[data-slot]');
+      const width = hand.kind === 'section' && cell instanceof HTMLElement ? insetBox(cell).width : source?.width;
+      if (width) el.style.inlineSize = `${width}px`;
+      el.style.visibility = 'visible';
+      el.style.opacity = '1';
+      el.style.scale = '1';
+      el.style.transition = alreadyHolding && input.current === 'keyboard' ? `transform ${lift}` : 'none';
+      if (input.current === 'keyboard') placeAim(el);
+      else if (pointer.current) placeAt(el, pointer.current.x, pointer.current.y);
+      else if (source) el.style.transform = `translate(${source.left}px, ${source.top}px)`;
+      return;
+    }
+    const landing = board.landing;
+    if (!landing) {
+      cursor.current = { phase: 'idle' };
+      snapshot.current = null;
+      return;
+    }
+    const returning = landing.kind === 'tray';
+    cursor.current = returning ? { phase: 'returning', token } : { phase: 'placing', target: landing, token };
+    const target = returning ? null : landingBox(landing);
+    if (!el || (!returning && !target) || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      complete();
+      return;
+    }
+    // Один владелец анимации: движение указателя и старые callbacks не могут
+    // изменить превью, пока машина находится в placing / returning.
+    const start = getComputedStyle(el).transform;
+    el.style.transition = 'none';
+    const frames = returning
+      ? [{ opacity: 1, transform: start }, { opacity: 0, transform: start }]
+      : [{ opacity: 1, transform: start }, { opacity: 1, transform: `translate(${target!.left}px, ${target!.top}px)` }];
+    const animation = el.animate(frames, {
+      duration: returning ? 140 : 250,
+      easing: 'cubic-bezier(0.2, 0, 0, 1)',
+      fill: 'forwards',
+    });
+    animation.onfinish = () => {
+      const state = cursor.current;
+      if ((state.phase !== 'placing' && state.phase !== 'returning') || state.token !== token) return;
+      flushSync(() => complete());
+    };
+    return () => {
+      animation.onfinish = null;
+      animation.cancel();
+    };
+  }, [hand, board.landing, board.editor, board.hold.aim]);
 
   useEffect(() => {
-    pin();
-  }, [handKey]);
-
-  useEffect(() => {
-    function remember(event: PointerEvent): void {
-      if (!event.isPrimary) return;
-
-      if (event.clientX === 0 && event.clientY === 0) return;
-
+    function point(event: PointerEvent): void {
+      if (!event.isPrimary || (event.clientX === 0 && event.clientY === 0)) return;
+      if (event.type === 'pointermove' && input.current === 'keyboard' && Math.hypot(event.movementX, event.movementY) < 6) return;
       pointer.current = { x: event.clientX, y: event.clientY };
-      fromKeys.current = false;
-      if (flying.current) return;
-
+      input.current = 'pointer';
+      document.body.dataset.cardInput = 'pointer';
+      if (cursor.current.phase !== 'holding') return;
+      cursor.current = { phase: 'holding', input: 'pointer' };
       const el = node.current;
-      if (!el || el.style.visibility === 'hidden') return;
-
+      if (!el) return;
       el.style.transition = 'none';
       placeAt(el, event.clientX, event.clientY);
     }
-
-    window.addEventListener('pointermove', remember);
-    window.addEventListener('pointerdown', remember);
+    function key(event: KeyboardEvent): void {
+      if (![' ', 'Spacebar', 'Tab', 'Enter', 'Shift', 'Delete', 'Backspace', 'Escape'].includes(event.key) && !event.key.startsWith('Arrow')) return;
+      input.current = 'keyboard';
+      document.body.dataset.cardInput = 'keyboard';
+      if (cursor.current.phase === 'holding') cursor.current = { phase: 'holding', input: 'keyboard' };
+    }
+    window.addEventListener('pointermove', point);
+    window.addEventListener('pointerdown', point);
+    window.addEventListener('keydown', key, true);
     return () => {
-      window.removeEventListener('pointermove', remember);
-      window.removeEventListener('pointerdown', remember);
+      window.removeEventListener('pointermove', point);
+      window.removeEventListener('pointerdown', point);
+      window.removeEventListener('keydown', key, true);
     };
   }, []);
 
   useEffect(() => {
-    if (!hand || board.editor) {
-      delete document.body.dataset.hand;
-
-      return;
-    }
-
-    document.body.dataset.hand = 'yes';
-
-    return () => {
-      delete document.body.dataset.hand;
-    };
+    if (hand && !board.editor) document.body.dataset.hand = 'yes';
+    else delete document.body.dataset.hand;
+    return () => { delete document.body.dataset.hand; };
   }, [hand, board.editor]);
 
-  const endFlight = useEffectEvent(() => {
-    board.clearLanding();
-  });
-
-  useLayoutEffect(() => {
-    flying.current = board.landing !== null && hand === null;
-    const el = node.current;
-    if (!el || !board.landing || hand) return;
-
-    const flyer = el;
-    const leaving = board.landing.kind === 'tray';
-
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      endFlight();
-
-      return;
-    }
-
-    const from = el.getBoundingClientRect();
-    const to = leaving ? null : landingBox(board.landing);
-    if (!leaving && (to === null || to === undefined)) {
-      endFlight();
-
-      return;
-    }
-
-    el.style.visibility = 'visible';
-    el.style.transition = 'none';
-    el.style.opacity = '1';
-    el.style.transform = `translate(${from.left}px, ${from.top}px)`;
-    el.style.inlineSize = `${from.width}px`;
-    el.getBoundingClientRect();
-
-    if (leaving || to === null) {
-      // Возврат в нераспределённые: короткое затухание на месте. Лететь через
-      // весь экран в боковушку карточке незачем — она там уже не нужна.
-      el.style.transition = `opacity ${vanish}, scale ${vanish}`;
-      el.style.opacity = '0';
-      el.style.scale = '0.96';
-    } else {
-      el.style.transition = `transform ${flight}`;
-      el.style.transform = `translate(${to.left}px, ${to.top}px)`;
-    }
-
-    let settled = false;
-    function finish(): void {
-      if (settled) return;
-
-      settled = true;
-      window.clearTimeout(timer);
-      flyer.removeEventListener('transitionend', onEnd);
-      flyer.style.transition = '';
-      flyer.style.opacity = '';
-      flyer.style.scale = '';
-      endFlight();
-    }
-
-    function onEnd(event: TransitionEvent): void {
-      if (event.target !== el) return;
-
-      if (event.propertyName !== (leaving ? 'opacity' : 'transform')) return;
-
-      finish();
-    }
-
-    const timer = window.setTimeout(finish, leaving ? 200 : 320);
-    el.addEventListener('transitionend', onEnd);
-
-    return () => {
-      settled = true;
-      window.clearTimeout(timer);
-      el.removeEventListener('transitionend', onEnd);
-    };
-  }, [board.landing, hand]);
-
-  useLayoutEffect(() => {
-    const el = node.current;
-    if (hand === null) {
-      lifted.current = false;
-
-      return;
-    }
-
-    if (!el || flying.current) return;
-
-    const source = sourceNode(hand);
-    const box = source?.getBoundingClientRect() ?? null;
-    const cell = document.querySelector('[data-slot]');
-    const width = hand.kind === 'section' && cell instanceof HTMLElement ? insetBox(cell).width : box?.width;
-    if (width) el.style.inlineSize = `${width}px`;
-
-    if (fromKeys.current) {
-      // Клавиатура: летящая карточка стартует ровно на месте исходной и уже
-      // оттуда уезжает к цели. Так в клетке не нужен второй экземпляр —
-      // глаз видит одну карточку, которая поднимается из слота.
-      if (!lifted.current && box) {
-        lifted.current = true;
-        el.style.transition = 'none';
-        el.style.transform = `translate(${box.left}px, ${box.top}px)`;
-        el.getBoundingClientRect();
-        el.style.transition = `transform ${lift}`;
-      }
-
-      placeAim(el);
-    } else if (pointer.current) {
-      lifted.current = true;
-      el.style.transition = 'none';
-      placeAt(el, pointer.current.x, pointer.current.y);
-    } else if (box) {
-      el.style.transform = `translate(${box.left}px, ${box.top}px)`;
-    }
-
-    el.style.visibility = 'visible';
-  }, [hand, board.hold.aim]);
-
-  useEffect(() => {
-    function onKey(event: KeyboardEvent): void {
-      if (event.key !== ' ' && event.key !== 'Spacebar' && !event.key.startsWith('Arrow') && event.key !== 'Tab') return;
-
-      fromKeys.current = true;
-    }
-
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, []);
-
-  const shown = card ?? (board.landing ? pinned : null);
-  if (shown === null || shown === undefined) return null;
-
+  const shown = board.editor ? null : card ?? (board.landing ? snapshot.current : null);
+  if (!shown) return null;
   return createPortal(<div ref={node} className={styles.float}>{shown}</div>, document.body);
 }
 
@@ -326,8 +261,10 @@ function placeAim(element: HTMLElement): void {
     const top = Math.max(8, rect.top);
     const bottom = Math.min(window.innerHeight - 8, rect.bottom);
     placeWithinViewport(element, rect.left + (rect.width - element.offsetWidth) / 2, top + (bottom - top) / 2 + 24);
+
     return;
   }
+
   placeWithinViewport(element, rect.right - element.offsetWidth * 0.4, rect.bottom - 24);
 }
 
@@ -385,7 +322,7 @@ function heldCard(
   const teacher = catalog.teachers.find((item) => item.id === lesson?.teacherId);
   const room = catalog.rooms.find((item) => item.id === lesson?.roomId);
   const course = catalog.courses.find((item) => item.id === section?.courseId);
-  if (!lesson || !section || !teacher || !room) return null;
+  if (!lesson || !section || !room) return null;
 
   return (
     <LessonPreview
@@ -393,7 +330,7 @@ function heldCard(
       courseCode={course?.code ?? section.code}
       courseName={course?.name ?? section.code}
       code={section.code}
-      teacherName={teacher.shortName}
+      teacherName={teacher?.shortName ?? 'Нужен преподаватель'}
       roomName={room.name}
       roomType={room.type}
       preferredRoomType={section.preferredRoomType}

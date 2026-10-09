@@ -10,7 +10,7 @@ export function placeFromEditor(input: Placement): ConflictResult {
   const result = useSchedule.getState().placeLesson(input);
   if (!result.ok) return result;
 
-  useSchedule.getState().rememberTeacher(input.sectionId, input.teacherId);
+  if (input.teacherId) useSchedule.getState().rememberTeacher(input.sectionId, input.teacherId);
 
   return result;
 }

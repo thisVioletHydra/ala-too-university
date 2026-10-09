@@ -19,7 +19,7 @@
   }
 
   &:hover {
-    border-color: var(--line-strong);
+    border-color: #6da8f5;
     background: var(--panel-soft);
   }
 
@@ -252,7 +252,28 @@
 .segments i { width: 18px; height: 6px; border-radius: 999px; background: var(--line); }
 .segments i[data-filled='yes'] { background: var(--ok); }
 .segments i[data-filled='yes'][data-extra='yes'] { background: var(--warn); }
+.card[data-excess='yes'] .phrase { color: var(--warn-ink); background: var(--warn-soft); padding: 0.2rem 0.45rem; border-radius: 6px; font-size: 0.7rem; }
+.card[data-excess='yes']:not([data-dim='yes']):not([data-overlay='yes']) { opacity: 1; }
+.excessCount { margin: 0; color: var(--muted); font-size: 0.7rem; text-align: right; }
 .card[data-state='done']:not([data-dim='yes']):not([data-overlay='yes']) { opacity: 0.8; }
 
 .card[data-dragging='yes'] { opacity: 1; border-style: dashed; border-color: var(--brand); background: var(--brand-soft); }
 .card[data-dragging='yes']::after { content: 'В руке'; position: absolute; inset-block-start: 0.2rem; inset-inline-end: 0.5rem; padding-inline: 0.25rem; border-radius: 4px; background: var(--brand-soft); font-size: 0.6rem; color: var(--brand-ink); pointer-events: none; }
+
+.card[data-needs-teacher='yes'] { border-color: #e3c995; }
+.card[data-needs-teacher='yes']:hover { border-color: #6da8f5; }
+.card[data-needs-teacher='yes'][data-aim='yes'], .card[data-needs-teacher='yes']:focus-visible { border-color: var(--brand-line); }
+.teacher[data-missing='yes'], .teacherNotice { color: #8d6b2d; background: #faf5e9; border-radius: 5px; padding: 0.1rem 0.35rem; font-size: 0.73rem; font-weight: 550; }
+.teacherNotice { justify-self: start; }
+
+
+.teacherWarning { display: inline-grid; place-items: center; vertical-align: middle; margin-right: 0.3rem; width: 12px; height: 12px; border-radius: 50%; background: #eda85c; color: white; font-size: 9px; font-weight: 750; line-height: 1; }
+
+.card[data-state='done']:hover:not([data-dragging='yes']):not([data-aim='yes']) { border-color: #6da8f5; }
+
+.card:hover:not([data-held='yes']):not([data-dragging='yes']):not([data-aim='yes']) { box-shadow: 0 0 0 1px rgb(109 168 245 / 30%); }
+
+.card[data-show-course='yes'] .name { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.78rem; }
+
+.editSection { display: grid; place-items: center; flex: 0 0 auto; width: 23px; height: 23px; padding: 0; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--muted); cursor: pointer; }
+.editSection:hover { color: var(--brand); border-color: var(--brand-line); }

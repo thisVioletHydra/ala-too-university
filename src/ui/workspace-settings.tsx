@@ -53,7 +53,7 @@ export function WorkspaceSettings(props: { dataset: Dataset; onDataset: (dataset
     : board.editor
     ? [['↑ ↓ ← →', 'поля / кнопки'], ['Enter', 'открыть / подтвердить'], ['Tab', 'следующее поле'], ['Esc', 'закрыть']]
     : board.hold.hand
-      ? [['↑↓←→', 'ячейка'], ['Пробел', 'поставить'], ['Shift', 'серия'], ['Enter', 'править'], ['Tab', 'область'], ['Esc', 'отмена']]
+      ? [['↑↓←→', 'навигация'], ['Пробел', 'поставить'], ['Shift', 'режимы'], ['Enter', 'править'], ['Del / Backspace', 'удалить'], ['Tab', 'область'], ['Esc', 'отмена']]
       : [['↑↓←→', 'навигация'], ['Пробел', 'взять'], ['Enter', 'открыть'], ['Tab', 'дальше']];
   const hintsSlot = document.getElementById('keyboard-hints-slot');
 

@@ -116,3 +116,6 @@
 .dropLabel[data-remove='yes'] { background: var(--warn-soft); color: var(--warn-ink); border-color: var(--warn-line); }
 .cell[data-over='yes'][data-remove='yes'] { background: var(--warn-soft); }
 .cell[data-over='yes'][data-remove='yes']::after { border-color: var(--warn); }
+
+.origin { display: none; }
+:global(body[data-card-input='keyboard']) .origin { display: flex; }

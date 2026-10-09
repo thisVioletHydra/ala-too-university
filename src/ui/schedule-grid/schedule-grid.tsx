@@ -67,23 +67,23 @@ export function ScheduleGrid(props: ScheduleGridProps) {
                   const section = findSection(props.catalog, lesson.sectionId);
                   const teacher = findTeacher(props.catalog, lesson.teacherId);
                   const room = findRoom(props.catalog, lesson.roomId);
-                  if (!section || !teacher || !room) return null;
+                  if (!section || !room) return null;
 
                   return {
-                      lessonId: lesson.id,
-                      sectionId: section.id,
-                      courseId: section.courseId,
-                      courseCode: findCourse(props.catalog, section.courseId)?.code ?? section.code,
-                      courseName: findCourse(props.catalog, section.courseId)?.name ?? section.code,
-                      code: section.code,
-                      teacherName: teacher.shortName,
-                      roomName: room.name,
-                      roomType: room.type,
-                      preferredRoomType: section.preferredRoomType,
-                      highlighted: false,
-                      dimmed: (props.teacherId !== null || props.roomId !== null) && !highlighted(lesson, props.teacherId, props.roomId),
-                      onGrab: () => props.onGrab(lesson.id, dayIndex, slotIndex),
-                      onDrop: () => props.onDrop(dayIndex, slotIndex),
+                    lessonId: lesson.id,
+                    sectionId: section.id,
+                    courseId: section.courseId,
+                    courseCode: findCourse(props.catalog, section.courseId)?.code ?? section.code,
+                    courseName: findCourse(props.catalog, section.courseId)?.name ?? section.code,
+                    code: section.code,
+                    teacherName: teacher?.shortName ?? 'Нужен преподаватель',
+                    roomName: room.name,
+                    roomType: room.type,
+                    preferredRoomType: section.preferredRoomType,
+                    highlighted: false,
+                    dimmed: (props.teacherId !== null || props.roomId !== null) && !highlighted(lesson, props.teacherId, props.roomId),
+                    onGrab: () => props.onGrab(lesson.id, dayIndex, slotIndex),
+                    onDrop: () => props.onDrop(dayIndex, slotIndex),
                   };
                 }).filter((item) => item !== null)} />
               </SlotCell>

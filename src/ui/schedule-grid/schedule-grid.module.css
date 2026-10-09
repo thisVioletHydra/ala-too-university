@@ -98,10 +98,26 @@
 @media (width <= 600px) { .grid { grid-template-columns: 3.2rem repeat(5, minmax(11rem, 1fr)); } }
 
 .lessons { display: grid; gap: 4px; min-inline-size: 0; }
+.reorderItem { position: relative; min-inline-size: 0; }
+.insertion {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  border: 2px dashed var(--brand);
+  border-radius: var(--r-sm);
+  background: var(--brand-soft);
+  color: var(--brand-ink);
+  font-size: 0.72rem;
+  pointer-events: none;
+}
 .strip { display: flex; align-items: center; justify-content: space-between; gap: .4rem; min-inline-size: 0; inline-size: 100%; min-block-size: 1.85rem; padding: .35rem .5rem; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: var(--text); cursor: pointer; font-size: .7rem; }
 .strip strong { color: var(--course-text); font-family: ui-monospace, monospace; font-size: .68rem; white-space: nowrap; }
 .strip > span { color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
-.strip:hover { background: var(--panel-soft); border-color: var(--line-strong); }
+.strip:hover { background: var(--panel-soft); border-color: #6da8f5; }
 .strip[data-dimmed='yes'] { opacity: .4; }
 .strip { position: relative; padding-inline-start: .65rem; }
 .strip::before { content: ''; position: absolute; inset-inline-start: 0; inset-block: .3rem; inline-size: 3px; border-radius: 0 3px 3px 0; background: var(--rail-strong); }
@@ -116,6 +132,30 @@
 .pickerHead { display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-block-end: .8rem; }
 .pickerHead div { display: grid; gap: .25rem; }
 .pickerHead span { color: var(--muted); font-size: .75rem; }
-.pickerHead button { border: 1px solid var(--line); border-radius: 10px; background: var(--panel); color: var(--muted); inline-size: 2rem; block-size: 2rem; font-size: 1.25rem; cursor: pointer; }
+.pickerHead button { 
+  border: 1px solid var(--line); 
+  border-radius: 10px; 
+  background: var(--panel); 
+  color: var(--muted); 
+  inline-size: 2rem; 
+  block-size: 2rem; 
+  font-size: 1.25rem; 
+  line-height: normal;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
 .pickerList { display: grid; gap: .6rem; }
 .pickerHint { margin-block: .8rem 0; color: var(--muted); font-size: .7rem; line-height: 1.5; }
+
+.strip[data-needs-teacher='yes'] { border-color: #e3c995; }
+.strip[data-needs-teacher='yes']:hover { border-color: #6da8f5; }
+
+.strip[data-needs-teacher='yes'], .strip[data-needs-teacher='yes']:hover { background: #fff9e9; }
+
+.strip:hover { box-shadow: 0 0 0 1px rgb(109 168 245 / 30%); }
+
+.insertion { z-index: 4; pointer-events: none; padding-left: 2rem; }
+
+.insertion { background: transparent; }
+.reorderItem:has(.insertion) > div button[data-action='cancel'] { color: transparent; }

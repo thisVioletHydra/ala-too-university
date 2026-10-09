@@ -49,8 +49,8 @@
 .close {
   display: grid;
   place-items: center;
-  inline-size: 28px;
-  block-size: 28px;
+  inline-size: 40px;
+  block-size: 40px;
   margin-inline-start: auto;
   padding: 0;
   border: 0;
@@ -146,6 +146,30 @@
   padding-block-start: 0.3rem;
   border-block-start: 1px solid var(--line-soft);
 }
+.excess {
+  display: grid;
+  gap: 0.3rem;
+  margin: 0;
+  padding: 0.7rem 0.85rem;
+  border-radius: var(--r-md);
+  background: var(--warn-soft);
+  color: var(--warn-ink);
+  font-size: 0.78rem;
+}
+
+.remove {
+  margin-inline-end: auto;
+  min-block-size: 40px;
+  padding: 0.45rem 0.85rem;
+  border: 0;
+  border-radius: var(--r-md);
+  background: transparent;
+  color: #b94343;
+  font-size: 0.84rem;
+  font-weight: 600;
+}
+.remove:hover { background: #fff0f0; }
+.close svg { inline-size: 22px; block-size: 22px; }
 
 .ghost,
 .save {
@@ -203,3 +227,9 @@
     scale: 0.98;
   }
 }
+
+.teacherLabel { display: flex; align-items: center; justify-content: space-between; gap: 0.4rem; flex-wrap: wrap; }
+.teacherNotice { display: flex; align-items: center; gap: 0.4rem; width: fit-content; margin: 0; padding: 0.15rem 0.35rem; border-radius: 6px; background: #faf5e9; color: #8d6b2d; font-size: 0.72rem; }
+.teacherWarning { display: inline-grid; place-items: center; width: 12px; height: 12px; border-radius: 50%; background: #eda85c; color: white; font-size: 9px; font-weight: 750; line-height: 1; }
+
+.dialog :global([role='combobox']):focus { outline: none; border-color: var(--brand); box-shadow: var(--focus-halo); }

@@ -23,7 +23,7 @@
   }
 
   &:hover {
-    border-color: var(--line-strong);
+    border-color: #6da8f5;
     background: var(--panel-soft);
   }
 
@@ -202,7 +202,7 @@
 .name { color: var(--course-text); }
 .room { background: var(--panel); border-color: transparent; }
 
-.card:hover { background: var(--panel); border-color: var(--line-strong); box-shadow: var(--shadow); }
+.card:hover { background: var(--panel); border-color: #6da8f5; box-shadow: var(--shadow); }
 .card[data-overlay='yes'] { background: var(--course-surface); }
 .name { font-size: 0.85rem; line-height: 1.35; }
 .who { color: var(--course-text); opacity: 0.85; }
@@ -239,3 +239,65 @@
   font-size: .72rem;
 }
 .card[data-compact='yes'] .foot { font-size: .65rem; gap: .3rem; }
+
+.card[data-needs-teacher='yes'] { border-color: #e3c995; }
+.card[data-needs-teacher='yes']:hover { border-color: #6da8f5; }
+.card[data-needs-teacher='yes'] .who { color: #8d6b2d; background: #faf5e9; border-radius: 5px; padding: 0.1rem 0.3rem; font-size: 0.68rem; }
+.card[data-needs-teacher='yes'] .foot { flex-wrap: wrap; }
+
+
+.teacherWarning { display: inline-grid; place-items: center; vertical-align: middle; margin-right: 0.3rem; width: 12px; height: 12px; border-radius: 50%; background: #eda85c; color: white; font-size: 9px; font-weight: 750; line-height: 1; }
+
+/* Три стабильных ряда: код с кабинетом, название, преподаватель. */
+.card {
+  block-size: 7.5rem;
+  grid-template-rows: 1.5rem minmax(0, 1fr) 1.5rem;
+  align-items: start;
+}
+.name {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+.head { inline-size: 100%; block-size: 1.5rem; }
+.head .chip, .head .no { flex-shrink: 0; }
+.head .room { min-inline-size: 0; flex-shrink: 1; overflow: hidden; text-overflow: ellipsis; }
+.foot { align-self: end; flex-wrap: nowrap; min-block-size: 1.3rem; }
+.card[data-needs-teacher='yes'] .foot { flex-wrap: nowrap; }
+.card[data-compact='yes'] {
+  block-size: 4.7rem;
+  grid-template-rows: 1.3rem minmax(0, 1fr) 1.3rem;
+}
+.card[data-compact='yes'] .head { block-size: 1.3rem; }
+.card[data-compact='yes'] .name { display: block; }
+
+.card[data-list-view='yes'] {
+  block-size: auto;
+  min-block-size: 6rem;
+  grid-template-rows: 1.5rem auto 1.3rem;
+  gap: 0.35rem;
+}
+.card[data-list-view='yes'] .foot { align-self: start; }
+
+.card:hover:not([data-held='yes']):not([data-dragging='yes']):not([data-aim='yes']) { box-shadow: 0 0 0 1px rgb(109 168 245 / 30%); }
+
+.wrap { position: relative; }
+.wrap[data-actions='yes'] { opacity: 1; pointer-events: auto; }
+.actions { position: absolute; inset: 0; z-index: 3; display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: 1fr auto; gap: 0.3rem; padding: 0.4rem; border: 1px dashed var(--brand-line); border-radius: var(--r-sm); background: var(--panel); }
+.action { min-width: 0; padding: 0.35rem 0.2rem; border: 1px solid var(--line); border-radius: 6px; background: var(--panel-soft); color: var(--text); font-size: 0.68rem; cursor: pointer; }
+.action[data-action='edit'] { background: var(--brand-soft); color: var(--brand-ink); border-color: var(--brand-line); }
+.action[data-action='delete'] { color: #b65151; background: #fff5f4; border-color: #f0d6d2; }
+.action[data-action='cancel'] { grid-column: 1 / -1; padding: 0.15rem; border: 0; background: transparent; color: var(--muted); }
+.action:hover, .action[data-over='yes'] { outline: 2px solid var(--brand-line); outline-offset: -1px; }
+
+:global(body[data-card-input='keyboard']) .actions { display: none; }
+
+.actions { display: block; padding: 0; background: var(--panel-sunken); border-color: var(--line-strong); }
+.action[data-action='cancel'] { position: absolute; inset: 0; width: 100%; padding: 0.4rem 1.9rem; color: var(--muted); font-weight: 550; }
+.action[data-action='edit'] { position: absolute; top: 0.35rem; left: 0.35rem; width: 25px; height: 25px; padding: 0; display: grid; place-items: center; background: var(--panel); }
+.actions[data-strip='yes'] .action[data-action='cancel'] { padding: 0 1.8rem; font-size: 0.62rem; }
+.actions[data-strip='yes'] .action[data-action='edit'] { top: 2px; left: 3px; width: 20px; height: 20px; }
+:global(body[data-card-input='keyboard']) .actions { display: block; pointer-events: none; }
+:global(body[data-card-input='keyboard']) .action[data-action='edit'] { display: none; }
