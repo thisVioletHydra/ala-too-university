@@ -4,29 +4,43 @@
   flex-direction: column;
   gap: 4px;
   min-block-size: 4.6rem;
-  padding: 0.3rem;
+  padding: 0.28rem;
   border-block-end: 1px solid var(--line);
   border-inline-end: 1px solid var(--line);
-  background: #fff;
+  background: transparent;
 
+  /* Подсветка допустимости появляется только во время перетаскивания. */
   &[data-tone='ok'] {
-    background: var(--ok-soft);
+    background: var(--drop-ok);
   }
 
   &[data-tone='bad'] {
-    background: var(--bad-soft);
+    background: var(--drop-bad);
   }
 
   &[data-over='yes'] {
-    z-index: 4;
-    outline: 2px dashed var(--ring);
+    z-index: 1;
+    outline: 2px dashed var(--brand);
     outline-offset: -2px;
   }
 
+  &[data-over='yes'][data-tone='ok'] {
+    outline-color: var(--ok);
+  }
+
+  &[data-over='yes'][data-tone='bad'] {
+    outline-color: var(--bad);
+  }
+
   &[data-aim='yes']:not([data-over='yes']) {
-    outline: 2px dashed var(--ring);
+    outline: 2px dashed var(--focus);
     outline-offset: -2px;
   }
+}
+
+/* Последний день недели: внешнюю рамку рисует контейнер сетки. */
+.cell:nth-child(6n) {
+  border-inline-end: 0;
 }
 
 .tip {
@@ -36,16 +50,17 @@
   gap: 0.45rem;
   align-items: flex-start;
   inline-size: max-content;
-  max-inline-size: 18rem;
+  max-inline-size: 17rem;
   margin: 0;
-  padding: 0.45rem 0.6rem;
-  border-radius: 6px;
-  background: #fff;
-  color: var(--ink);
-  box-shadow: 0 8px 20px rgb(44 49 64 / 12%);
-  font-size: 0.875rem;
-  font-weight: 650;
+  padding: 0.42rem 0.6rem;
+  border: 1px solid var(--bad-line);
+  border-radius: var(--r-sm);
+  background: var(--panel);
+  color: var(--bad-ink);
+  font-size: 0.78rem;
+  font-weight: 550;
   line-height: 1.35;
+  box-shadow: var(--lift);
   visibility: hidden;
   pointer-events: none;
 }
@@ -54,13 +69,14 @@
   display: grid;
   flex: 0 0 auto;
   place-items: center;
-  inline-size: 1.15rem;
-  block-size: 1.15rem;
-  margin-block-start: 0.08rem;
+  inline-size: 1.05rem;
+  block-size: 1.05rem;
+  margin-block-start: 0.06rem;
   border-radius: 999px;
-  background: var(--bad);
-  color: #fff;
-  font-size: 0.8rem;
+  background: var(--bad-soft);
+  color: var(--bad);
+  font-size: 0.72rem;
+  font-weight: 700;
   line-height: 1;
 }
 

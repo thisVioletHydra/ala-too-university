@@ -14,6 +14,8 @@ import styles from '#ui/drag-ghost/drag-ghost.module.css';
 
 const dropAnimation = { duration: 250, easing: 'cubic-bezier(0.2, 0, 0, 1)' };
 const flight = '250ms cubic-bezier(0.2, 0, 0, 1)';
+const vanish = '140ms ease-out';
+const lift = '150ms cubic-bezier(0.2, 0, 0, 1)';
 
 export function DragGhost(props: { catalog: ScheduleCatalog }) {
   const ghost = useBoard().ghost;
@@ -46,6 +48,7 @@ export function HandCursor(props: { catalog: ScheduleCatalog }) {
   const pointer = useRef<{ x: number, y: number } | null>(null);
   const fromKeys = useRef(false);
   const flying = useRef(false);
+  const lifted = useRef(false);
   const [pinned, setPinned] = useState<ReactNode>(null);
   const hand = board.hold.hand;
   const drag = hand ? heldDrag(hand) : null;
@@ -72,11 +75,16 @@ export function HandCursor(props: { catalog: ScheduleCatalog }) {
       const el = node.current;
       if (!el || el.style.visibility === 'hidden') return;
 
+      el.style.transition = 'none';
       el.style.transform = `translate(${event.clientX + 12}px, ${event.clientY + 12}px)`;
     }
 
     window.addEventListener('pointermove', remember);
-    return () => window.removeEventListener('pointermove', remember);
+    window.addEventListener('pointerdown', remember);
+    return () => {
+      window.removeEventListener('pointermove', remember);
+      window.removeEventListener('pointerdown', remember);
+    };
   }, []);
 
   useEffect(() => {
@@ -103,6 +111,7 @@ export function HandCursor(props: { catalog: ScheduleCatalog }) {
     if (!el || !board.landing || hand) return;
 
     const flyer = el;
+    const leaving = board.landing.kind === 'tray';
 
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
       endFlight();
@@ -111,29 +120,31 @@ export function HandCursor(props: { catalog: ScheduleCatalog }) {
     }
 
     const from = el.getBoundingClientRect();
-    const to = landingBox(board.landing);
-    if (to === null || to === undefined) {
+    const to = leaving ? null : landingBox(board.landing);
+    if (!leaving && (to === null || to === undefined)) {
       endFlight();
 
       return;
     }
 
-    const fade = board.landing.kind === 'tray';
-    const target = fade
-      ? { left: to.left + (to.width - from.width) / 2, top: to.top + 16, width: from.width }
-      : to;
     el.style.visibility = 'visible';
     el.style.transition = 'none';
     el.style.opacity = '1';
     el.style.transform = `translate(${from.left}px, ${from.top}px)`;
     el.style.inlineSize = `${from.width}px`;
     el.getBoundingClientRect();
-    el.style.transition = fade
-      ? `transform ${flight}, inline-size ${flight}, opacity ${flight}`
-      : `transform ${flight}, inline-size ${flight}`;
-    el.style.transform = `translate(${target.left}px, ${target.top}px)`;
-    el.style.inlineSize = `${target.width}px`;
-    if (fade) el.style.opacity = '0';
+
+    if (leaving || to === null) {
+      // Возврат в нераспределённые: короткое затухание на месте. Лететь через
+      // весь экран в боковушку карточке незачем — она там уже не нужна.
+      el.style.transition = `opacity ${vanish}, scale ${vanish}`;
+      el.style.opacity = '0';
+      el.style.scale = '0.96';
+    } else {
+      el.style.transition = `transform ${flight}, inline-size ${flight}`;
+      el.style.transform = `translate(${to.left}px, ${to.top}px)`;
+      el.style.inlineSize = `${to.width}px`;
+    }
 
     let settled = false;
     function finish(): void {
@@ -144,16 +155,19 @@ export function HandCursor(props: { catalog: ScheduleCatalog }) {
       flyer.removeEventListener('transitionend', onEnd);
       flyer.style.transition = '';
       flyer.style.opacity = '';
+      flyer.style.scale = '';
       endFlight();
     }
 
     function onEnd(event: TransitionEvent): void {
-      if (event.target !== el || event.propertyName !== 'transform') return;
+      if (event.target !== el) return;
+
+      if (event.propertyName !== (leaving ? 'opacity' : 'transform')) return;
 
       finish();
     }
 
-    const timer = window.setTimeout(finish, 320);
+    const timer = window.setTimeout(finish, leaving ? 200 : 320);
     el.addEventListener('transitionend', onEnd);
 
     return () => {
@@ -165,16 +179,37 @@ export function HandCursor(props: { catalog: ScheduleCatalog }) {
 
   useLayoutEffect(() => {
     const el = node.current;
-    if (!el || !hand || flying.current) return;
+    if (hand === null) {
+      lifted.current = false;
+
+      return;
+    }
+
+    if (!el || flying.current) return;
 
     const source = sourceNode(hand);
-    if (source) el.style.inlineSize = `${source.getBoundingClientRect().width}px`;
+    const box = source?.getBoundingClientRect() ?? null;
+    if (box) el.style.inlineSize = `${box.width}px`;
 
-    if (fromKeys.current) placeAim(el);
-    else if (pointer.current) placeAt(el, pointer.current.x, pointer.current.y);
-    else if (source) {
-      const rect = source.getBoundingClientRect();
-      el.style.transform = `translate(${rect.left}px, ${rect.top}px)`;
+    if (fromKeys.current) {
+      // Клавиатура: летящая карточка стартует ровно на месте исходной и уже
+      // оттуда уезжает к цели. Так в клетке не нужен второй экземпляр —
+      // глаз видит одну карточку, которая поднимается из слота.
+      if (!lifted.current && box) {
+        lifted.current = true;
+        el.style.transition = 'none';
+        el.style.transform = `translate(${box.left}px, ${box.top}px)`;
+        el.getBoundingClientRect();
+        el.style.transition = `transform ${lift}`;
+      }
+
+      placeAim(el);
+    } else if (pointer.current) {
+      lifted.current = true;
+      el.style.transition = 'none';
+      placeAt(el, pointer.current.x, pointer.current.y);
+    } else if (box) {
+      el.style.transform = `translate(${box.left}px, ${box.top}px)`;
     }
 
     el.style.visibility = 'visible';
@@ -226,6 +261,7 @@ function insetBox(node: HTMLElement): { left: number, top: number, width: number
   const padStart = Number.parseFloat(style.paddingInlineStart);
   const padEnd = Number.parseFloat(style.paddingInlineEnd);
   const padTop = Number.parseFloat(style.paddingBlockStart);
+
   return {
     left: rect.left + padStart,
     top: rect.top + padTop,

@@ -79,9 +79,10 @@ function PickList(props: PickListProps) {
         className={styles.trigger}
         aria-expanded={open}
         aria-haspopup="listbox"
+        data-active={props.value === null ? 'no' : 'yes'}
         onClick={() => setOpen((value) => !value)}
       >
-        {current}
+        <span className={styles.value}>{current}</span>
       </button>
       {open
         ? (
@@ -127,7 +128,21 @@ function Option(props: OptionProps) {
       aria-selected={props.selected}
       onClick={props.onPick}
     >
-      {props.label}
+      <span className={styles.optionLabel}>{props.label}</span>
+      {props.selected
+        ? (
+          <svg className={styles.check} viewBox="0 0 16 16" aria-hidden="true">
+            <path
+              d="m3.5 8.5 3 3 6-7"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        )
+        : null}
     </button>
   );
 }

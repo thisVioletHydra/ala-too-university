@@ -4,30 +4,44 @@
 }
 
 .bar button {
-  min-block-size: 44px;
-  padding: 0.5rem 0.9rem;
+  display: inline-flex;
+  gap: 0.4rem;
+  align-items: center;
+  min-block-size: 36px;
+  padding: 0.4rem 0.7rem;
   border: 1px solid var(--line);
-  border-radius: 10px;
-  background: #fff;
-  font-size: 1rem;
-  font-weight: 650;
-
-  &:not(:disabled) {
-    border-color: var(--ink);
-    background: var(--ink);
-    color: #fff;
-  }
+  border-radius: var(--r-md);
+  background: var(--panel);
+  color: var(--text);
+  font-size: 0.82rem;
+  font-weight: 550;
+  box-shadow: var(--shadow);
+  transition: border-color 150ms ease, background 150ms ease, color 150ms ease;
 
   &:hover:not(:disabled) {
-    background: #243044;
+    border-color: var(--line-strong);
+    background: var(--panel-soft);
   }
 
   &:active:not(:disabled) {
-    transform: scale(0.98);
+    transform: scale(0.985);
   }
 
   &:disabled {
+    border-color: var(--line-soft);
+    background: transparent;
+    color: var(--faint);
+    box-shadow: none;
     cursor: not-allowed;
-    color: var(--muted);
   }
+}
+
+.icon {
+  flex: 0 0 auto;
+  inline-size: 15px;
+  block-size: 15px;
+}
+
+.icon[data-flip='yes'] {
+  scale: -1 1;
 }

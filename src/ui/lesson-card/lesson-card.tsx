@@ -69,14 +69,16 @@ export function LessonPreview(props: LessonFields) {
   return <LessonFace {...props} highlighted={false} overlay held={false} />;
 }
 
+const roomWarning = 'Аудитория не того типа, который предпочтителен для этой секции';
+
 function RoomMark() {
   return (
-    <span className={styles.warn} title="Поставлено не в предпочтительный тип аудитории">
-      <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
-        <path fill="currentColor" d="M8 1.4 15 14.2H1L8 1.4Z" />
-        <path fill="#fff" d="M7.25 6.2h1.5V10H7.25V6.2Zm0 4.7h1.5v1.5H7.25v-1.5Z" />
+    <span className={styles.warn} title={roomWarning}>
+      <svg viewBox="0 0 16 16" aria-hidden="true">
+        <circle cx="8" cy="8" r="7" fill="currentColor" />
+        <path d="M7.3 4.4h1.4v4.6H7.3zM7.3 10.4h1.4v1.4H7.3z" />
       </svg>
-      <span className={styles.sr}>Поставлено не в предпочтительный тип аудитории</span>
+      <span className={styles.sr}>{roomWarning}</span>
     </span>
   );
 }
@@ -107,15 +109,22 @@ function LessonFace(props: LessonFaceProps) {
   const flashed = props.lessonId !== undefined && flash.lessonId === props.lessonId;
   const body = (
     <>
-      <span className={styles.top}>
-        <span className={styles.tag}>{props.courseCode}</span>
+      <span className={styles.rail} aria-hidden="true" />
+      <span className={styles.head}>
+        <span className={styles.chip}>{props.courseCode}</span>
         <span className={styles.no}>{sectionNo(props.courseCode, props.code)}</span>
       </span>
       <span className={styles.name}>{props.courseName}</span>
-      <span className={styles.who}>{props.teacherName}</span>
-      <span className={styles.room} data-warn={otherRoom ? 'yes' : 'no'}>
-        {props.roomName}
-        {otherRoom ? <RoomMark /> : null}
+      <span className={styles.foot}>
+        <span className={styles.who}>{props.teacherName}</span>
+        <span
+          className={styles.room}
+          data-warn={otherRoom ? 'yes' : 'no'}
+          title={otherRoom ? roomWarning : undefined}
+        >
+          {props.roomName}
+          {otherRoom ? <RoomMark /> : null}
+        </span>
       </span>
     </>
   );

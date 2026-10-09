@@ -251,8 +251,22 @@ function Workspace(props: WorkspaceProps) {
           />
         )
         : null}
+      <DragLegend />
       <DragGhost catalog={props.catalog} />
       <HandCursor catalog={props.catalog} />
     </div>
+  );
+}
+
+/** Подсказка о цветах слотов — показывается, только пока идёт перенос. */
+function DragLegend() {
+  const board = useBoard();
+  if (board.advice.size === 0 || board.editor) return null;
+
+  return (
+    <p className="board-note" role="status">
+      <span><i data-tone="ok" aria-hidden="true" />можно ставить</span>
+      <span><i data-tone="bad" aria-hidden="true" />нельзя — причина на слоте</span>
+    </p>
   );
 }

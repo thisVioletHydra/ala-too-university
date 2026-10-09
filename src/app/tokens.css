@@ -1,30 +1,102 @@
+/*
+ * Единственное место, где заданы цвета, тени и радиусы.
+ * Компоненты обращаются только к переменным — своих значений в модулях нет.
+ */
 :root {
-  --bg: #f4f5f8;
-  --panel: #fff;
-  --ink: #2c3140;
-  --muted: #4a5160;
-  --focus: #1e3a5f;
-  --warn: #9a3412;
-  --line: #e6e8f0;
-  --accent: #6f6c86;
-  --ok: #1f9d55;
-  --ok-soft: #e8f7ee;
-  --bad: #e23b3b;
-  --bad-soft: #fdecec;
-  --shadow: 0 10px 28px rgb(44 49 64 / 6%);
-  --lift: 0 18px 36px rgb(44 49 64 / 16%);
-  --ring: rgb(59 130 246 / 85%);
-  --ring-halo: rgb(59 130 246 / 30%);
-  --radius: 16px;
   color-scheme: light;
+
+  /* Поверхности: холодные, с низким свечением — панели читаются как карточки. */
+  --bg: #e9edf6;
+  --bg-glow: #f3f6fc;
+  --panel: #fff;
+  --panel-soft: #f6f8fd;
+  --panel-sunken: #ecf1f9;
+  --grid-head: #eff4fc;
+
+  /* Текст: слейт вместо почти чёрного. */
+  --ink: #16203a;
+  --text: #38455f;
+  --muted: #5c6b85;
+  --faint: #93a0b6;
+
+  /* Линии: структуру держат фоны, а не рамки. */
+  --line: #e0e6f1;
+  --line-soft: #edf1f8;
+  --line-strong: #c9d4e6;
+
+  /* Акцент интерфейса. */
+  --brand: #2f56d8;
+  --brand-ink: #2440ab;
+  --brand-soft: #e9eefd;
+  --brand-soft-strong: #dbe4fc;
+  --brand-line: #b7c7fa;
+  --on-brand: #fff;
+
+  /* Состояния: насыщенные в мелких деталях, спокойные в больших заливках. */
+  --ok: #0f9d58;
+  --ok-ink: #0a6b3c;
+  --ok-soft: #e4f7ec;
+  --ok-line: #a9e3c4;
+
+  --warn: #d98207;
+  --warn-ink: #92560a;
+  --warn-soft: #fdf1dd;
+  --warn-line: #f2d49a;
+  --on-warn: #fff;
+
+  --bad: #e5484d;
+  --bad-ink: #b4231c;
+  --bad-soft: #feeceb;
+  --bad-line: #f8c9c5;
+
+  --focus: #2f56d8;
+  --ring: rgb(47 86 216 / 38%);
+
+  /* Заливки слотов во время переноса. */
+  --drop-ok: #dcf4e6;
+  --drop-bad: #fde3e1;
+
+  /* Слои поверх интерфейса. */
+  --veil: rgb(255 255 255 / 80%);
+  --surface-float: rgb(255 255 255 / 96%);
+  --scrim: rgb(16 24 44 / 38%);
+
+  /* Тени и внутренние обводки. */
+  --shadow-hair: 0 1px 1px rgb(20 30 55 / 4%);
+  --shadow: 0 1px 2px rgb(20 30 55 / 5%), 0 10px 26px rgb(20 30 55 / 8%);
+  --shadow-md: 0 4px 12px rgb(20 30 55 / 10%), 0 16px 34px rgb(20 30 55 / 12%);
+  --lift: 0 22px 48px rgb(20 30 55 / 22%), 0 3px 8px rgb(20 30 55 / 10%);
+  --shadow-float: drop-shadow(0 16px 30px rgb(20 30 55 / 20%));
+  --inset-hair: inset 0 0 0 1px rgb(20 30 55 / 3%);
+
+  --r-xs: 6px;
+  --r-sm: 8px;
+  --r-md: 10px;
+  --r-lg: 14px;
+  --r-xl: 18px;
+
+  --h: 222;
 }
 
-[data-course='C_CS101'] { --stripe: #1d4ed8; }
-[data-course='C_CS205'] { --stripe: #0f766e; }
-[data-course='C_DB202'] { --stripe: #b45309; }
-[data-course='C_MATH201'] { --stripe: #6d28d9; }
-[data-course='C_MATH101'] { --stripe: #be185d; }
-[data-course='C_ENG110'] { --stripe: #0e7490; }
-[data-course='C_PHY150'] { --stripe: #c2410c; }
-[data-course='C_HIS120'] { --stripe: #3f6212; }
-[data-course='C_AI310'] { --stripe: #a21caf; }
+/*
+ * Цвет курса — только оттенок. Роль решает, сколько взять насыщенности:
+ * чип, рейка и бар получают сочные значения, большие заливки остаются бледными.
+ */
+[data-course] {
+  --chip-bg: hsl(var(--h) 82% 95%);
+  --chip-ink: hsl(var(--h) 62% 30%);
+  --chip-line: hsl(var(--h) 68% 86%);
+  --rail: hsl(var(--h) 70% 53%);
+  --rail-strong: hsl(var(--h) 74% 45%);
+  --rail-soft: hsl(var(--h) 62% 72%);
+}
+
+[data-course='C_CS101'] { --h: 222; }
+[data-course='C_CS205'] { --h: 174; }
+[data-course='C_DB202'] { --h: 32; }
+[data-course='C_MATH201'] { --h: 262; }
+[data-course='C_MATH101'] { --h: 330; }
+[data-course='C_ENG110'] { --h: 196; }
+[data-course='C_PHY150'] { --h: 14; }
+[data-course='C_HIS120'] { --h: 92; }
+[data-course='C_AI310'] { --h: 300; }

@@ -2,6 +2,7 @@
   inline-size: 100%;
   min-inline-size: 0;
   max-inline-size: 100%;
+  opacity: 0.97;
 }
 
 .float {
@@ -11,4 +12,5 @@
   inset-inline-start: 0;
   pointer-events: none;
   visibility: hidden;
+  filter: var(--shadow-float);
 }

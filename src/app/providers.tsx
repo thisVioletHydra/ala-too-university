@@ -216,7 +216,9 @@ export function Providers(props: { catalog: ScheduleCatalog, children: ReactNode
       hand: null,
       overKey: null,
       overList: false,
-      aim: current.aim === 'list:return' ? '' : current.aim,
+      // Карточка ушла в нераспределённые — курсор держать не на чем, иначе
+      // на слоте остаётся висеть пунктирная рамка.
+      aim: next.kind === 'tray' || current.aim === 'list:return' ? '' : current.aim,
     }));
   }
 

@@ -6,10 +6,19 @@ import { useBoard } from '#app/providers.tsx';
 import { useSchedule } from '#app/schedule.store.ts';
 import { explainSlot } from '#schedule/conflicts.ts';
 import { placementConflict } from '#schedule/conflicts.ts';
+import { plural } from '#ui/plural.ts';
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
 
 import styles from '#ui/lesson-editor/lesson-editor.module.css';
+
+const shortDay: Record<WeekDay, string> = {
+  MON: 'Понедельник',
+  TUE: 'Вторник',
+  WED: 'Среда',
+  THU: 'Четверг',
+  FRI: 'Пятница',
+};
 
 type LessonEditorProps = {
   catalog: ScheduleCatalog
@@ -26,6 +35,8 @@ export function LessonEditor(props: LessonEditorProps) {
   const section = props.catalog.sections.find((item) => item.id === draft.sectionId);
   if (section === null || section === undefined) return null;
 
+  const course = props.catalog.courses.find((item) => item.id === section.courseId);
+  const timeSlot = props.catalog.timeSlots.find((item) => item.id === draft.timeSlotId);
   const result = teacherId && roomId
     ? placementConflict({
       placement: {
@@ -64,6 +75,9 @@ export function LessonEditor(props: LessonEditorProps) {
   }
 
   const reason = result && !result.ok ? result.text : null;
+  const when = timeSlot
+    ? `${shortDay[draft.day]} · ${timeSlot.start}–${timeSlot.end}`
+    : shortDay[draft.day];
 
   return createPortal(
     <div className={styles.backdrop} onClick={props.onClose}>
@@ -73,74 +87,100 @@ export function LessonEditor(props: LessonEditorProps) {
         aria-labelledby="editor-title"
         onClick={(event) => event.stopPropagation()}
       >
-        <h2 id="editor-title">{props.catalog.courses.find((item) => item.id === section.courseId)?.name ?? section.code}</h2>
-        <p className={styles.code}>{section.code}</p>
-        <label className={styles.field}>
-          Преподаватель
-          <select value={teacherId} onChange={(event) => setTeacherId(event.target.value)}>
-            <option value="">Выберите</option>
-            {section.allowedTeacherIds.map((id) => {
-              const teacher = props.catalog.teachers.find((item) => item.id === id);
-              const advice = explainSlot({
-                section,
-                day: draft.day,
-                timeSlotId: draft.timeSlotId,
-                lessons,
-                rooms: props.catalog.rooms,
-                sections: props.catalog.sections,
-                blockedSlots: props.catalog.blockedSlots,
-                teacherId: id,
-                roomId: null,
-                excludeLessonId: draft.excludeLessonId,
-              });
-              const blocked = !advice.ok && !advice.needsChoice;
-              return (
-                <option key={id} value={id} disabled={blocked} title={advice.text ?? ''}>
-                  {teacher?.shortName ?? id}{blocked ? ` — ${advice.text}` : ''}
-                </option>
-              );
-            })}
-          </select>
-        </label>
-        <label className={styles.field}>
-          Аудитория
-          <select value={roomId} onChange={(event) => setRoomId(event.target.value)}>
-            <option value="">Выберите</option>
-            {props.catalog.rooms.map((room) => {
-              const tooSmall = room.capacity < section.studentsCount;
-              const busy = teacherId
-                ? placementConflict({
-                  placement: {
-                    sectionId: section.id,
-                    teacherId,
-                    roomId: room.id,
-                    day: draft.day,
-                    timeSlotId: draft.timeSlotId,
-                  },
+        <header className={styles.head}>
+          <span className={styles.chip} data-course={section.courseId}>{course?.code ?? section.code}</span>
+          <span className={styles.code}>{section.code}</span>
+          <button
+            type="button"
+            className={styles.close}
+            aria-label="Закрыть"
+            onClick={props.onClose}
+          >
+            <svg viewBox="0 0 16 16" aria-hidden="true">
+              <path
+                d="M4.5 4.5 11.5 11.5M11.5 4.5 4.5 11.5"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.7"
+                strokeLinecap="round"
+              />
+            </svg>
+          </button>
+        </header>
+        <div className={styles.title}>
+          <h2 id="editor-title">{course?.name ?? section.code}</h2>
+          <p className={styles.when}>{when}</p>
+        </div>
+        <div className={styles.fields}>
+          <label className={styles.field}>
+            <span className={styles.label}>Преподаватель</span>
+            <select value={teacherId} onChange={(event) => setTeacherId(event.target.value)}>
+              <option value="">Выберите</option>
+              {section.allowedTeacherIds.map((id) => {
+                const teacher = props.catalog.teachers.find((item) => item.id === id);
+                const advice = explainSlot({
+                  section,
+                  day: draft.day,
+                  timeSlotId: draft.timeSlotId,
                   lessons,
-                  sections: props.catalog.sections,
                   rooms: props.catalog.rooms,
+                  sections: props.catalog.sections,
                   blockedSlots: props.catalog.blockedSlots,
+                  teacherId: id,
+                  roomId: null,
                   excludeLessonId: draft.excludeLessonId,
-                })
-                : null;
-              const roomProblem = busy && !busy.ok && (busy.kind === 'room-busy' || busy.kind === 'room-small');
-              const disabled = tooSmall || Boolean(roomProblem);
-              const title = tooSmall
-                ? `${room.capacity} мест, нужно ${section.studentsCount}`
-                : roomProblem && !busy.ok
-                  ? busy.text
-                  : '';
-              return (
-                <option key={room.id} value={room.id} disabled={disabled} title={title}>
-                  {room.name} · {room.capacity}{title ? ` — ${title}` : ''}
-                </option>
-              );
-            })}
-          </select>
-        </label>
-        {reason ? <p className={styles.reason}>{reason}</p> : null}
-        {draft.text && !reason ? <p className={styles.reason}>{draft.text}</p> : null}
+                });
+                const blocked = !advice.ok && !advice.needsChoice;
+                return (
+                  <option key={id} value={id} disabled={blocked} title={advice.text ?? ''}>
+                    {teacher?.shortName ?? id}{blocked ? ` — ${advice.text}` : ''}
+                  </option>
+                );
+              })}
+            </select>
+          </label>
+          <label className={styles.field}>
+            <span className={styles.label}>Аудитория</span>
+            <select value={roomId} onChange={(event) => setRoomId(event.target.value)}>
+              <option value="">Выберите</option>
+              {props.catalog.rooms.map((room) => {
+                const tooSmall = room.capacity < section.studentsCount;
+                const busy = teacherId
+                  ? placementConflict({
+                    placement: {
+                      sectionId: section.id,
+                      teacherId,
+                      roomId: room.id,
+                      day: draft.day,
+                      timeSlotId: draft.timeSlotId,
+                    },
+                    lessons,
+                    sections: props.catalog.sections,
+                    rooms: props.catalog.rooms,
+                    blockedSlots: props.catalog.blockedSlots,
+                    excludeLessonId: draft.excludeLessonId,
+                  })
+                  : null;
+                const roomProblem = busy && !busy.ok && (busy.kind === 'room-busy' || busy.kind === 'room-small');
+                const disabled = tooSmall || Boolean(roomProblem);
+                const title = tooSmall
+                  ? `${room.capacity} мест, нужно ${section.studentsCount}`
+                  : roomProblem && !busy.ok
+                    ? busy.text
+                    : '';
+                return (
+                  <option key={room.id} value={room.id} disabled={disabled} title={title}>
+                    {room.name} · {room.capacity}{title ? ` — ${title}` : ''}
+                  </option>
+                );
+              })}
+            </select>
+          </label>
+        </div>
+        <p className={styles.note} data-tone={reason ? 'bad' : 'calm'}>
+          {reason ?? draft.text
+            ?? `Нужно ${section.requiredLessonsPerWeek} ${plural(section.requiredLessonsPerWeek, 'занятие', 'занятия', 'занятий')} в неделю · ${section.studentsCount} ${plural(section.studentsCount, 'студент', 'студента', 'студентов')}`}
+        </p>
         <div className={styles.actions}>
           <button type="button" className={styles.ghost} onClick={props.onClose}>Закрыть</button>
           <button

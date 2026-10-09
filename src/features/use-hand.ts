@@ -23,6 +23,7 @@ type HandStep = {
   slot: number
   hand: Hand | null
   focus: boolean
+  aim?: string
 };
 
 export function useHand(input: HandInput) {
@@ -51,7 +52,7 @@ export function useHand(input: HandInput) {
     setArmed(true);
     board.setHold({
       hand: next.hand,
-      aim: returning ? 'list:return' : next.zone === 'list' ? `list:${next.list}` : key,
+      aim: next.aim ?? (returning ? 'list:return' : next.zone === 'list' ? `list:${next.list}` : key),
       overKey: next.hand && next.zone === 'grid' ? key : null,
       overList: returning,
     });
@@ -213,11 +214,15 @@ export function useHand(input: HandInput) {
       const lesson = lessonAt(input.lessons, input.days, input.slots, day, slot, event.target);
       if (lesson === null || lesson === undefined) return;
 
+      // Курсор переезжает в клетку взятой карточки, иначе пунктир цели остаётся
+      // там, где он был до этого, и не совпадает с тем, что мы держим в руке.
+      const from = lessonSlot(lesson, input.days, input.slots) ?? { day, slot };
+
       publish({
         zone: 'grid',
         list,
-        day,
-        slot,
+        day: from.day,
+        slot: from.slot,
         hand: { kind: 'lesson', lessonId: lesson.id },
         focus: true,
       });
@@ -264,7 +269,10 @@ export function useHand(input: HandInput) {
         day: dayIndex,
         slot: slotIndex,
         hand: { kind: 'lesson', lessonId },
-        focus: true,
+        // Pointer click picks up the card, but does not move the keyboard
+        // target until the pointer actually enters another slot.
+        focus: false,
+        aim: '',
       });
     },
     enter: (next: Zone) => {
@@ -353,6 +361,18 @@ function lessonAt(
   if (!dayId || !slotId) return null;
 
   return lessons.find((item) => item.day === dayId && item.timeSlotId === slotId) ?? null;
+}
+
+function lessonSlot(
+  lesson: Lesson,
+  days: WeekDay[],
+  slots: string[],
+): { day: number, slot: number } | null {
+  const day = days.indexOf(lesson.day);
+  const slot = slots.indexOf(lesson.timeSlotId);
+  if (day < 0 || slot < 0) return null;
+
+  return { day, slot };
 }
 
 function zoneOf(target: EventTarget | null): Zone | null {

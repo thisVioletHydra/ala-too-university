@@ -1,118 +1,170 @@
 .card {
+  position: relative;
   display: grid;
-  gap: 0.2rem;
+  flex: 0 0 auto;
+  gap: 0.16rem;
   inline-size: 100%;
   min-inline-size: 0;
-  padding: 0.5rem 0.55rem;
+  padding: 0.4rem 0.5rem 0.42rem 0.72rem;
+  overflow: hidden;
   border: 1px solid var(--line);
-  border-radius: 6px;
-  background: #fff;
+  border-radius: var(--r-sm);
+  background: var(--panel);
+  box-shadow: var(--shadow-hair);
   color: inherit;
   text-align: start;
   cursor: grab;
-  outline: 1.5px solid transparent;
-  outline-offset: 0;
-  box-shadow: 0 0 0 0 transparent;
-  transition: outline-color 180ms ease, box-shadow 180ms ease;
+  user-select: none;
+  transition: border-color 140ms ease, background 140ms ease, box-shadow 140ms ease;
 
   &:focus-visible {
-    outline: 2px dashed var(--ring);
+    outline: 2px solid var(--focus);
     outline-offset: 2px;
   }
 
-  &[data-flash='yes'] {
-    animation: confirm 200ms ease;
-  }
-
-  &:active {
-    transform: scale(0.98);
+  &:hover {
+    border-color: var(--line-strong);
+    background: var(--panel-soft);
   }
 
   &[data-highlighted='yes'] {
-    box-shadow: inset 0 0 0 2px var(--accent);
+    border-color: var(--brand-line);
+    background: var(--brand-soft);
+    box-shadow: inset 0 0 0 1px var(--brand-line);
+  }
+
+  /* Карточку несут в руке: в клетке не остаётся второго экземпляра.
+     Коробка сохраняется, поэтому сетка не прыгает при подъёме и возврате. */
+  &[data-held='yes'] {
+    opacity: 0;
+    pointer-events: none;
   }
 
   &[data-overlay='yes'] {
+    border-color: var(--line-strong);
     box-shadow: var(--lift);
     cursor: grabbing;
+    rotate: -0.7deg;
+    scale: 1.02;
   }
 
-  &:hover,
-  &[data-held='yes'] {
-    outline-color: var(--ring);
-    box-shadow: 0 0 0 3px var(--ring-halo);
+  &[data-flash='yes'] {
+    animation: settle 620ms ease-out;
   }
 
+  /* Во время переноса не подсвечиваем каждую карточку под курсором. */
   :global(body[data-hand='yes']) &:hover:not([data-held='yes']),
-  :global(body[data-drag='yes']) &:hover:not([data-held='yes']),
-  :global(body[data-hand='yes']) &:active:not([data-held='yes']),
-  :global(body[data-drag='yes']) &:active:not([data-held='yes']) {
-    outline-color: transparent;
-    box-shadow: 0 0 0 0 transparent;
-    transform: none;
+  :global(body[data-drag='yes']) &:hover:not([data-held='yes']) {
+    border-color: var(--line);
+    background: var(--panel);
     cursor: grabbing;
   }
 
   :global(body[data-hand='yes']) &[data-highlighted='yes']:hover:not([data-held='yes']),
   :global(body[data-drag='yes']) &[data-highlighted='yes']:hover:not([data-held='yes']) {
-    box-shadow: inset 0 0 0 2px var(--accent);
+    border-color: var(--brand-line);
+    background: var(--brand-soft);
   }
 }
 
-.top {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
+/* Идентичность курса — тонкая рейка слева, а не яркая плашка. */
+.rail {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  inline-size: 3px;
+  background: var(--rail);
 }
 
-.no {
-  color: var(--ink);
-  font-size: 0.875rem;
-  font-weight: 600;
-}
-
-.tag {
-  justify-self: start;
-  padding: 0.12rem 0.5rem;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--stripe, var(--muted)) 28%, #fff);
-  color: var(--stripe, var(--ink));
-  font-size: 0.875rem;
-  font-weight: 700;
-  line-height: 1.35;
-}
-
-.name {
-  min-inline-size: 0;
-  font-size: 1rem;
-  font-weight: 700;
-  line-height: 1.25;
-}
-
-.who,
-.room {
+.head {
   display: flex;
   align-items: center;
   gap: 0.3rem;
-  color: var(--ink);
-  font-size: 0.875rem;
+  min-inline-size: 0;
+}
+
+.chip {
+  padding: 0.04rem 0.32rem;
+  border: 1px solid var(--chip-line);
+  border-radius: 5px;
+  background: var(--chip-bg);
+  color: var(--chip-ink);
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+.no {
+  color: var(--muted);
+  font-size: 0.68rem;
   font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.name {
+  color: var(--ink);
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1.28;
+  letter-spacing: -0.005em;
+}
+
+.foot {
+  display: flex;
+  gap: 0.35rem;
+  align-items: center;
+  justify-content: space-between;
+  min-inline-size: 0;
+  padding-block-start: 0.08rem;
+}
+
+.who {
+  min-inline-size: 0;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 550;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.room {
+  display: inline-flex;
+  flex: 0 0 auto;
+  gap: 0.2rem;
+  align-items: center;
+  padding: 0.04rem 0.3rem;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: var(--panel-soft);
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .room[data-warn='yes'] {
-  color: var(--warn);
+  border-color: var(--warn-line);
+  background: var(--warn-soft);
+  color: var(--warn-ink);
 }
 
 .warn {
-  position: relative;
   display: inline-flex;
   flex: 0 0 auto;
-  color: var(--warn);
+  color: var(--warn-ink);
 
   svg {
     display: block;
-    inline-size: 16px;
-    block-size: 16px;
+    inline-size: 12px;
+    block-size: 12px;
+  }
+
+  svg path {
+    fill: var(--on-warn);
   }
 }
 
@@ -121,10 +173,13 @@
   inline-size: 1px;
   block-size: 1px;
   overflow: hidden;
-  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
-@keyframes confirm {
-  from { background-color: #fde68a; }
-  to { background-color: #fff; }
+@keyframes settle {
+  from {
+    border-color: var(--ok);
+    background: var(--ok-soft);
+  }
 }

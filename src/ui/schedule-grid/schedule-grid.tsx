@@ -30,13 +30,16 @@ type ScheduleGridProps = {
 export function ScheduleGrid(props: ScheduleGridProps) {
   return (
     <div className={styles.grid} data-keyboard-zone="grid" onFocus={props.onEnter}>
-      <div className={styles.corner} />
+      <div className={styles.corner} aria-hidden="true" />
       {props.catalog.weekDays.map((day) => (
-        <div key={day.id} className={styles.head}>{shortDay[day.id]}</div>
+        <div key={day.id} className={styles.head} title={day.label}>{shortDay[day.id]}</div>
       ))}
       {props.catalog.timeSlots.map((timeSlot, slotIndex) => (
         <Fragment key={timeSlot.id}>
-          <div className={styles.time}>{timeSlot.start}</div>
+          <div className={styles.time} title={`${timeSlot.start}–${timeSlot.end}`}>
+            <span className={styles.start}>{timeSlot.start}</span>
+            <span className={styles.end}>{timeSlot.end}</span>
+          </div>
           {props.catalog.weekDays.map((day, dayIndex) => {
             const lessons = props.lessons.filter((lesson) => {
               return lesson.day === day.id && lesson.timeSlotId === timeSlot.id;

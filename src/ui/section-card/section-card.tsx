@@ -4,17 +4,16 @@ import type { ProgressState } from '#schedule/section-progress.ts';
 import { useDraggable } from '@dnd-kit/core';
 import { useBoard } from '#app/providers.tsx';
 import { sectionProgress } from '#schedule/section-progress.ts';
+import { plural } from '#ui/plural.ts';
 
 import styles from '#ui/section-card/section-card.module.css';
 
 function lessonsWord(count: number): string {
-  const mod10 = count % 10;
-  const mod100 = count % 100;
-  if (mod10 === 1 && mod100 !== 11) return 'занятие';
+  return plural(count, 'занятие', 'занятия', 'занятий');
+}
 
-  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return 'занятия';
-
-  return 'занятий';
+function studentsWord(count: number): string {
+  return plural(count, 'студент', 'студента', 'студентов');
 }
 
 function progressPhrase(state: ProgressState, placed: number, required: number): string {
@@ -130,23 +129,31 @@ function SectionFace(props: SectionFaceProps) {
       tabIndex={props.tabStop ? 0 : -1}
       onClick={props.onGrab}
     >
+      <span className={styles.rail} aria-hidden="true" />
       <div className={styles.head}>
-        <span className={styles.top}>
-          <span className={styles.tag}>{props.courseCode}</span>
-          <span className={styles.no}>{sectionNo(props.courseCode, props.section.code)}</span>
+        <span className={styles.chip}>{props.courseCode}</span>
+        <span className={styles.no}>{sectionNo(props.courseCode, props.section.code)}</span>
+        <span className={styles.count} title={`Поставлено ${progress.placed} из ${progress.required}`}>
+          {progress.placed}
+          <span className={styles.slash} aria-hidden="true">/</span>
+          {progress.required}
         </span>
       </div>
       <p className={styles.name}>{props.courseName}</p>
       <p className={styles.meta}>
-        <span>{props.section.studentsCount} студентов</span>
-        <span>{props.teacherName ?? 'Преподаватель не назначен'}</span>
+        <span className={styles.students}>{props.section.studentsCount} {studentsWord(props.section.studentsCount)}</span>
+        <span
+          className={styles.teacher}
+          data-missing={props.teacherName === null ? 'yes' : 'no'}
+        >
+          {props.teacherName ?? 'Без преподавателя'}
+        </span>
       </p>
-      <p className={styles.phrase}>{progressPhrase(progress.state, progress.placed, progress.required)}</p>
-      <div className={styles.progress}>
-        <span className={styles.count}>{progress.placed} из {progress.required}</span>
+      <div className={styles.foot}>
         <span className={styles.track}>
           <span className={styles.bar} style={{ inlineSize: `${width}%` }} />
         </span>
+        <span className={styles.phrase}>{progressPhrase(progress.state, progress.placed, progress.required)}</span>
       </div>
     </article>
   );

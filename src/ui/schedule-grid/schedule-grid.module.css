@@ -1,18 +1,19 @@
 .grid {
   display: grid;
-  grid-template-columns: 3rem repeat(5, minmax(12rem, 1fr));
-  min-inline-size: 0;
+  grid-template-columns: 3.4rem repeat(5, minmax(11.5rem, 1fr));
   flex: 1;
+  min-inline-size: 0;
   min-block-size: 0;
   align-content: start;
   grid-auto-rows: max-content;
   overflow: auto;
   scrollbar-gutter: stable;
   border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: #fff;
+  border-radius: var(--r-lg);
+  background: var(--panel-soft);
   box-shadow: var(--shadow);
 
+  /* Сетка получает фокус программно — рамку показывают слоты. */
   :focus-visible:not([data-over='yes']):not([data-aim='yes']) {
     outline: none;
     box-shadow: none;
@@ -22,22 +23,61 @@
 .corner,
 .head,
 .time {
-  padding: 0.55rem 0.35rem;
   border-block-end: 1px solid var(--line);
-  background: #f8fafc;
-  color: var(--ink);
-  font-size: 0.875rem;
-  font-weight: 650;
+  background: var(--grid-head);
+  color: var(--muted);
   text-align: center;
 }
 
-.head,
-.time {
+.corner,
+.head {
+  padding: 0.5rem 0.4rem;
+  font-size: 0.73rem;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+}
+
+.head {
+  position: sticky;
+  z-index: 2;
+  inset-block-start: 0;
   border-inline-end: 1px solid var(--line);
 }
 
+.corner {
+  position: sticky;
+  z-index: 3;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+}
+
 .time {
-  padding-inline: 0.15rem;
+  position: sticky;
+  z-index: 1;
+  inset-inline-start: 0;
+  display: grid;
+  gap: 0.02rem;
+  padding: 0.4rem 0.3rem;
+  border-inline-end: 1px solid var(--line);
+  font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 
+.start {
+  color: var(--text);
+  font-size: 0.75rem;
+  font-weight: 650;
+  letter-spacing: 0;
+}
+
+.end {
+  color: var(--muted);
+  font-size: 0.67rem;
+  font-weight: 550;
+}
+
+@media (width <= 1400px) {
+  .grid {
+    grid-template-columns: 3.2rem repeat(5, minmax(9.5rem, 1fr));
+  }
+}
