@@ -1,7 +1,7 @@
 import type { ConflictResult, Lesson, LessonEdit, LessonMove, Placement, ScheduleCatalog } from '#schedule/types.ts';
 
 import { placementConflict } from '#schedule/conflicts.ts';
-import { sectionTeacher } from '#schedule/section-teacher.ts';
+import { sectionAssignmentConflict } from '#schedule/section-assignment.ts';
 import { create } from 'zustand';
 
 const historyLimit = 40;
@@ -210,16 +210,5 @@ function missing(): ConflictResult {
 function checkSection(get: () => ScheduleStore, lessons: Lesson[], sectionId: string, assignedTeacherId?: string): ConflictResult {
   const catalog = get().catalog;
   if (!catalog) return { ok: false, kind: 'no-room', text: 'Расписание ещё не загружено' };
-  const section = catalog.sections.find((item) => item.id === sectionId);
-  if (!section) return missing();
-  const teacherId = assignedTeacherId ?? sectionTeacher(section, lessons, get().rememberedTeachers);
-  const duplicate = teacherId ? catalog.sections.find((other) => other.id !== sectionId
-    && other.courseId === section.courseId
-    && sectionTeacher(other, lessons, get().rememberedTeachers) === teacherId) : null;
-  if (duplicate) return { ok: false, kind: 'teacher-not-allowed', text: `Преподаватель уже назначен на секцию ${duplicate.code} этой дисциплины` };
-  for (const placement of lessons.filter((item) => item.sectionId === sectionId)) {
-    const result = placementConflict({ placement, lessons, sections: catalog.sections, rooms: catalog.rooms, blockedSlots: catalog.blockedSlots, excludeLessonId: placement.id });
-    if (!result.ok) return { ...result, text: `Преподаватель не назначен секции: ${result.text}` };
-  }
-  return { ok: true };
+  return sectionAssignmentConflict({ catalog, lessons, sectionId, teacherId: assignedTeacherId, rememberedTeachers: get().rememberedTeachers });
 }

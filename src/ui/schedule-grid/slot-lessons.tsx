@@ -1,3 +1,7 @@
+import { matchesKey } from '#interaction/keyboard.ts';
+import { pickerReturnAfter, pickerReturnLesson } from '#interaction/picker-return.ts';
+import type { PickerReturn } from '#interaction/picker-return.ts';
+import { groupView, groupCommand, pickerState } from '#interaction/group-policy.ts';
 import type { LessonCardProps } from '#ui/lesson-card/lesson-card.tsx';
 
 import { useBoard } from '#app/providers.tsx';
@@ -15,10 +19,11 @@ export function SlotLessons(props: { label: string, items: LessonCardProps[] }) 
   const dialog = useRef<HTMLDialogElement>(null);
   const origin = useRef<HTMLElement | null>(null);
   const selected = useRef<string | null>(null);
-  const grabbed = useRef<string | null>(null);
+  const returnToPicker = useRef<PickerReturn>({ kind: 'none' });
   const [position, setPosition] = useState<number | null>(null);
-  const multiple = props.items.length > 1;
-  const strips = props.items.length >= 3;
+  const view = groupView(props.items.length);
+  const multiple = view !== 'single';
+  const strips = view === 'strips';
   const items = props.items;
   const visible = multiple ? items.slice(0, 2) : items;
   const carried = board.ghost ?? board.hold.hand;
@@ -29,9 +34,9 @@ export function SlotLessons(props: { label: string, items: LessonCardProps[] }) 
 
   useEffect(() => {
     function restorePicker(): void {
-      const lessonId = grabbed.current;
-      if (!lessonId || !items.some((item) => item.lessonId === lessonId)) return;
-      grabbed.current = null;
+      const lessonId = pickerReturnLesson(returnToPicker.current, items.map((item) => item.lessonId));
+      if (!lessonId) return;
+      returnToPicker.current = pickerReturnAfter(returnToPicker.current, { kind: 'release' });
       selected.current = lessonId;
       setOpen(true);
     }
@@ -40,13 +45,14 @@ export function SlotLessons(props: { label: string, items: LessonCardProps[] }) 
   }, [items]);
 
   useEffect(() => {
-    if (!board.hold.hand && !board.ghost) grabbed.current = null;
+    if (!board.hold.hand && !board.ghost) returnToPicker.current = pickerReturnAfter(returnToPicker.current, { kind: 'release' });
   }, [board.hold.hand, board.ghost]);
 
   useEffect(() => {
     function markAction(event: KeyboardEvent): void {
-      if (!grabbed.current || (!board.hold.hand && !board.ghost)) return;
-      if (event.key === 'Shift' || event.key === ' ' || event.key === 'Spacebar') grabbed.current = null;
+      if (returnToPicker.current.kind === 'none') return;
+      const changesIntent = matchesKey('copyMode', event.key) || matchesKey('place', event.key);
+      if (changesIntent) returnToPicker.current = pickerReturnAfter(returnToPicker.current, { kind: 'action' });
     }
     window.addEventListener('keydown', markAction, true);
     return () => window.removeEventListener('keydown', markAction, true);
@@ -75,8 +81,9 @@ export function SlotLessons(props: { label: string, items: LessonCardProps[] }) 
   }
 
   useEffect(() => {
-    if (!open) return;
-    if (board.editor) {
+    const state = pickerState(open, board.editor !== null);
+    if (state === 'closed') return;
+    if (state === 'suspended-for-editor') {
       dialog.current?.close();
       return;
     }
@@ -98,19 +105,23 @@ export function SlotLessons(props: { label: string, items: LessonCardProps[] }) 
 
       const card = event.target instanceof Element ? event.target.closest<HTMLElement>('[data-lesson-id]') : null;
       const held = board.hold.hand;
+      const cellTarget = event.target === slot || Boolean(event.target instanceof Element && event.target.closest('[data-slot-strip]'));
+      const command = groupCommand({
+        lessonIds: items.map((item) => item.lessonId), hand: held, dragging: board.ghost !== null,
+        copyMode: event.shiftKey, key: event.key, cellTarget,
+      });
       if (held) {
-        if (strips || held.kind !== 'lesson' || !items.some((item) => item.lessonId === held.lessonId) || event.shiftKey) return;
-        if (!['ArrowUp', 'ArrowDown', ' '].includes(event.key)) return;
+        if (command === 'ignore') return;
         event.preventDefault();
         event.stopPropagation();
         if (event.repeat) return;
-        const index = insertion;
-        if (event.key === ' ') {
-          useSchedule.getState().swapLessons(held.lessonId, items[index].lessonId);
+        if (command === 'confirm-order' && held.kind === 'lesson') {
+          useSchedule.getState().swapLessons(held.lessonId, items[insertion].lessonId);
           board.setHold({ ...board.hold, hand: null, overKey: null, overList: false });
           (slot as HTMLElement)?.focus();
         } else {
-          setPosition(Math.max(0, Math.min(items.length - 1, index + (event.key === 'ArrowDown' ? 1 : -1))));
+          const direction = command === 'reorder-down' ? 1 : -1;
+          setPosition(Math.max(0, Math.min(items.length - 1, insertion + direction)));
         }
         return;
       }
@@ -121,28 +132,25 @@ export function SlotLessons(props: { label: string, items: LessonCardProps[] }) 
         if (event.repeat) return;
         const index = items.findIndex((item) => item.lessonId === card.dataset.lessonId);
         if (index < 0) return;
-        if (event.key === 'Delete' || event.key === 'Backspace') {
+        if (matchesKey('remove', event.key)) {
           useSchedule.getState().unassignLesson(items[index].lessonId);
           (slot as HTMLElement)?.focus();
         }
-        if (event.key === 'Escape') (slot as HTMLElement)?.focus();
+        if (matchesKey('cancel', event.key)) (slot as HTMLElement)?.focus();
         if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
           const next = items[(index + (event.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length];
           root.current?.querySelector<HTMLElement>(`[data-lesson-id="${CSS.escape(next.lessonId)}"]`)?.focus();
         }
-        if (event.key === 'Enter') board.setEditor({ mode: 'edit', lessonId: items[index].lessonId });
-        if (event.key === ' ') items[index].onGrab();
+        if (matchesKey('edit', event.key)) board.setEditor({ mode: 'edit', lessonId: items[index].lessonId });
+        if (matchesKey('place', event.key)) items[index].onGrab();
         return;
       }
 
-      if (event.target !== slot && !(event.target instanceof Element && event.target.closest('[data-slot-strip]'))) return;
-
-      if (event.key !== 'Enter' && event.key !== ' ') return;
-
+      if (command === 'ignore') return;
       event.preventDefault();
       event.stopPropagation();
       if (event.repeat) return;
-      if (strips) show();
+      if (command === 'open-picker') show();
       else root.current?.querySelector<HTMLElement>('[data-lesson-id]')?.focus();
     }
 
@@ -235,16 +243,16 @@ export function SlotLessons(props: { label: string, items: LessonCardProps[] }) 
           cards[next]?.focus();
         }
 
-        if (active >= 0 && (event.key === 'Enter' || event.key === ' ')) {
+        if (active >= 0 && (matchesKey('edit', event.key) || matchesKey('place', event.key))) {
           event.preventDefault();
           if (event.repeat) return;
 
           const item = items[active];
-          if (event.key === 'Enter') {
+          if (matchesKey('edit', event.key)) {
             selected.current = item.lessonId;
             board.setEditor({ mode: 'edit', lessonId: item.lessonId });
           } else {
-            grabbed.current = item.lessonId;
+            returnToPicker.current = pickerReturnAfter(returnToPicker.current, { kind: 'grab', lessonId: item.lessonId });
             close(false);
             item.onGrab();
           }
@@ -270,7 +278,7 @@ export function SlotLessons(props: { label: string, items: LessonCardProps[] }) 
       </header>
       <div className={styles.pickerList}>{items.map((item) => <LessonCard key={item.lessonId} {...item}
         listView
-        onGrab={() => { grabbed.current = item.lessonId;
+        onGrab={() => { returnToPicker.current = pickerReturnAfter(returnToPicker.current, { kind: 'grab', lessonId: item.lessonId });
           close(false);
           item.onGrab();
         }} />)}</div>

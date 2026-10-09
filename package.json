@@ -10,7 +10,8 @@
     "#features/*": "./src/features/*",
     "#ui/*": "./src/ui/*",
     "#data/*": "./src/data/*",
-    "#accessible/*": "./src/accessible/*"
+    "#accessible/*": "./src/accessible/*",
+    "#interaction/*": "./src/interaction/*"
   },
   "scripts": {
     "dev": "vite",

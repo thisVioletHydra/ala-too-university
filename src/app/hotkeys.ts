@@ -1,3 +1,5 @@
+import { detectPlatform, globalCommand } from '#interaction/keyboard.ts';
+
 type Hotkeys = {
   undo: () => void
   redo: () => void
@@ -6,31 +8,13 @@ type Hotkeys = {
 };
 
 export function bindHotkeys(handlers: Hotkeys): () => void {
+  const platform = detectPlatform(navigator.platform);
   function onKeyDown(event: KeyboardEvent): void {
     if (event.defaultPrevented) return;
-    const meta = event.metaKey || event.ctrlKey;
-    if (meta && event.key.toLowerCase() === 'z' && !event.shiftKey) {
-      event.preventDefault();
-      handlers.undo();
-
-      return;
-    }
-
-    if (meta && event.key.toLowerCase() === 'z' && event.shiftKey) {
-      event.preventDefault();
-      handlers.redo();
-
-      return;
-    }
-
-    if (meta && event.key.toLowerCase() === 'k') {
-      event.preventDefault();
-      handlers.focusSearch();
-
-      return;
-    }
-
-    if (event.key === 'Escape') handlers.close();
+    const command = globalCommand(event, platform);
+    if (!command) return;
+    if (command !== 'close') event.preventDefault();
+    handlers[command]();
   }
 
   window.addEventListener('keydown', onKeyDown);

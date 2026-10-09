@@ -1,3 +1,4 @@
+import { decideDrop } from '#interaction/drop-policy.ts';
 import { sectionTeacher } from '#schedule/section-teacher.ts';
 import type { DragEndEvent, DragOverEvent, DragStartEvent } from '@dnd-kit/core';
 import type { SlotAdvice } from '#schedule/conflicts.ts';
@@ -13,55 +14,8 @@ import { useSchedule } from '#app/schedule.store.ts';
 import { explainSlot } from '#schedule/conflicts.ts';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
-export type EditorRequest =
-  | {
-    mode: 'create'
-    sectionId: string
-    day: WeekDay
-    timeSlotId: string
-    teacherId: string | null
-    roomId: string | null
-    text: string | null
-  }
-  | { mode: 'edit', lessonId: string }
-  | { mode: 'section', sectionId: string };
-
-export type ActiveDrag =
-  | { kind: 'section', sectionId: string, teacherId?: string, roomId?: string }
-  | { kind: 'lesson', lessonId: string, copy: boolean };
-
-export type DragFace = {
-  code: string
-  courseId: string
-  courseCode: string
-  teacherName: string | null
-  roomName: string | null
-};
-
-export type Hand =
-  | { kind: 'section', sectionId: string, teacherId?: string, roomId?: string, originLessonId?: string }
-  | { kind: 'lesson', lessonId: string };
-
-export type Hold = {
-  hand: Hand | null
-  aim: string
-  overKey: string | null
-  overList: boolean
-};
-
-export type DropTarget =
-  | { kind: 'unassign' }
-  | { kind: 'slot', day: WeekDay, timeSlotId: string };
-
-export type Landing =
-  | { kind: 'card', lessonId: string }
-  | { kind: 'slot', day: WeekDay, timeSlotId: string }
-  | { kind: 'tray' };
-
-export type Flash = {
-  lessonId: string | null
-  sectionId: string | null
-};
+import type { EditorRequest, ActiveDrag, DragFace, Hand, Hold, DropTarget, Landing, Flash } from '#interaction/types.ts';
+export type { EditorRequest, ActiveDrag, DragFace, Hand, Hold, DropTarget, Landing, Flash } from '#interaction/types.ts';
 
 const quietFlash: Flash = { lessonId: null, sectionId: null };
 
@@ -314,6 +268,8 @@ export function Providers(props: { catalog: ScheduleCatalog, children: ReactNode
   }
 
   function dropHand(hand: Hand, target: DropTarget): void {
+    const decision = decideDrop({ hand, target, lessons: useSchedule.getState().lessons, copyMode: repeatKey.current });
+    if (decision.kind === 'missing-source') return;
     if (target.kind === 'unassign') {
       if (hand.kind === 'section') {
         setLanding(null);
@@ -329,15 +285,11 @@ export function Providers(props: { catalog: ScheduleCatalog, children: ReactNode
       return;
     }
 
-    const originId = hand.kind === 'lesson' ? hand.lessonId : hand.originLessonId;
-    const origin = useSchedule.getState().lessons.find((item) => item.id === originId);
-    if (!repeatKey.current && origin?.day === target.day && origin.timeSlotId === target.timeSlotId) {
+    if (decision.kind === 'cancel') {
       setHold((current) => ({ ...current, hand: null, overKey: null, overList: false }));
-
       return;
     }
-
-    if (repeatKey.current && removeMatching(hand, target)) return;
+    if (decision.kind === 'remove' && removeMatching(hand, target)) return;
 
     if (hand.kind === 'section') {
       const before = new Set(useSchedule.getState().lessons.map((item) => item.id));
@@ -360,7 +312,7 @@ export function Providers(props: { catalog: ScheduleCatalog, children: ReactNode
           roomId: outcome.roomId,
           text: outcome.text,
         });
-        if (repeatKey.current === null || repeatKey.current === undefined) release({ kind: 'slot', day: target.day, timeSlotId: target.timeSlotId });
+        if (!repeatKey.current) release({ kind: 'slot', day: target.day, timeSlotId: target.timeSlotId });
 
         return;
       }

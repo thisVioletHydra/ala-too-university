@@ -1,6 +1,9 @@
+import { navigateSidebar } from '#accessible/sidebar-navigation.ts';
+import { hasCommandModifier, matchesKey } from '#interaction/keyboard.ts';
+import { navigationPermissions } from '#interaction/input-policy.ts';
 import type { SlotAdvice } from '#schedule/conflicts.ts';
 import type { Lesson, WeekDay } from '#schedule/types.ts';
-import type { Hand } from '#app/providers.tsx';
+import type { Hand } from '#interaction/types.ts';
 
 import { keyboardGrid } from '#accessible/keyboard-grid.ts';
 import { keyboardSlot } from '#accessible/keyboard-slot.ts';
@@ -123,43 +126,25 @@ export function useHand(input: HandInput) {
 
   const onKeyDown = useEffectEvent((event: KeyboardEvent) => {
     if (event.defaultPrevented) return;
-    if (event.metaKey || event.ctrlKey || event.altKey) return;
+    if (hasCommandModifier(event)) return;
+    const permissions = navigationPermissions({
+      composing: event.isComposing, shiftPressed: event.shiftKey,
+      sidebarHidden: input.listHidden, carrying: hand !== null,
+      dragging: board.ghost !== null, editing: board.editor !== null,
+      landing: board.landing !== null, repeated: event.repeat,
+    });
 
-    if (isArrow(event.key) && !event.isComposing && !event.shiftKey && !input.listHidden && !hand && !board.ghost && !board.editor && event.target instanceof HTMLElement) {
-      const target = event.target;
-      const tabs = Array.from(document.querySelectorAll<HTMLButtonElement>('#sections-panel header button'));
-      const issues = Array.from(document.querySelectorAll<HTMLButtonElement>('#sections-panel footer button'));
-      const tabIndex = tabs.indexOf(target as HTMLButtonElement);
-      const issueIndex = issues.indexOf(target as HTMLButtonElement);
-      if (target.id === 'section-search' && event.key === 'ArrowUp') {
+    const sidebarArrow = isArrow(event.key) && permissions.sidebar;
+    if (sidebarArrow && event.target instanceof HTMLElement) {
+      const destination = navigateSidebar(event.target, event.key, input.sections.length);
+      if (destination.kind !== 'unhandled') {
         event.preventDefault();
-        (tabs.find((tab) => tab.getAttribute('aria-pressed') === 'true') ?? tabs[0])?.focus();
-        return;
-      }
-      if (tabIndex >= 0) {
-        event.preventDefault();
-        if (event.key === 'ArrowDown') document.getElementById('section-search')?.focus();
-        else if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') tabs[Math.max(0, Math.min(tabs.length - 1, tabIndex + (event.key === 'ArrowRight' ? 1 : -1)))]?.focus();
-        return;
-      }
-      if (issueIndex >= 0) {
-        event.preventDefault();
-        if (event.key === 'ArrowUp' && issueIndex === 0) {
-          if (input.sections.length) publish({ zone: 'list', list: input.sections.length - 1, day, slot, hand: null, focus: true });
-          else document.getElementById('section-search')?.focus();
-        } else if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
-          issues[Math.max(0, Math.min(issues.length - 1, issueIndex + (event.key === 'ArrowDown' ? 1 : -1)))]?.focus();
+        if (destination.kind === 'card') {
+          keys.current = true;
+          publish({ zone: 'list', list: destination.index, day, slot, hand: null, focus: true });
         }
         return;
       }
-    }
-
-    if (event.key === 'ArrowDown' && event.target instanceof HTMLElement && event.target.id === 'section-search') {
-      if (event.isComposing || event.shiftKey || input.listHidden || input.sections.length === 0 || hand || board.ghost || board.editor) return;
-      event.preventDefault();
-      keys.current = true;
-      publish({ zone: 'list', list: 0, day, slot, hand: null, focus: true });
-      return;
     }
 
     if (typing(event.target)) return;
@@ -167,7 +152,7 @@ export function useHand(input: HandInput) {
     const place = zoneOf(event.target);
 
     if (isArrow(event.key) && place === null) {
-      if (event.repeat || event.shiftKey || input.listHidden || hand || board.ghost || board.landing || board.editor) return;
+      if (!permissions.recoverFocus) return;
       if (document.querySelector('dialog[open], [role="dialog"], [role="listbox"], [popover]:popover-open')) return;
       const target = event.target;
       if (target instanceof Element && target.closest('button, a[href], input, textarea, select, [contenteditable], [tabindex], [role="button"], [role="combobox"], [role="menu"], [role="slider"], [role="spinbutton"], [role="tablist"]')) return;
@@ -179,7 +164,7 @@ export function useHand(input: HandInput) {
       return;
     }
 
-    if (event.key === 'Tab') {
+    if (matchesKey('switchArea', event.key)) {
       if (input.listHidden) return;
 
       const here = place ?? (hand ? zone : null);
@@ -203,7 +188,7 @@ export function useHand(input: HandInput) {
       return;
     }
 
-    if (event.key === 'Escape' && hand) {
+    if (matchesKey('cancel', event.key) && hand) {
       event.preventDefault();
       keys.current = true;
       seek.current = false;
@@ -216,7 +201,7 @@ export function useHand(input: HandInput) {
       return;
     }
 
-    if ((event.key === 'Delete' || event.key === 'Backspace') && hand?.kind === 'lesson') {
+    if (matchesKey('remove', event.key) && hand?.kind === 'lesson') {
       if (event.repeat) return;
 
       event.preventDefault();
@@ -225,7 +210,7 @@ export function useHand(input: HandInput) {
       return;
     }
 
-    if ((event.key === 'Delete' || event.key === 'Backspace') && place === 'grid' && !hand) {
+    if (matchesKey('remove', event.key) && place === 'grid' && !hand) {
       event.preventDefault();
       if (event.repeat || board.ghost) return;
       const cell = event.target instanceof Element ? event.target.closest('[data-slot]') : null;
@@ -272,7 +257,7 @@ export function useHand(input: HandInput) {
       return;
     }
 
-    if (event.key === 'Enter' && hand) {
+    if (matchesKey('edit', event.key) && hand) {
       event.preventDefault();
       if (event.repeat) return;
 
@@ -292,7 +277,7 @@ export function useHand(input: HandInput) {
       return;
     }
 
-    if (event.key === 'Enter' && place === 'grid') {
+    if (matchesKey('edit', event.key) && place === 'grid') {
       const lesson = lessonAt(input.lessons, input.days, input.slots, day, slot, event.target);
       if (lesson === null || lesson === undefined) return;
 
@@ -302,7 +287,7 @@ export function useHand(input: HandInput) {
       return;
     }
 
-    if (event.key !== ' ' && event.key !== 'Spacebar' && !(event.key === 'Enter' && place === 'list')) return;
+    if (!matchesKey('place', event.key) && !(matchesKey('edit', event.key) && place === 'list')) return;
 
     if (event.repeat) return;
 
@@ -467,7 +452,7 @@ function firstOpen(
       if (!item?.ok) continue;
 
       const occupied = lessons.some((lesson) => lesson.day === dayId && lesson.timeSlotId === slotId);
-      if (occupied === null || occupied === undefined) return { day, slot };
+      if (!occupied) return { day, slot };
 
       if (fallback === null || fallback === undefined) fallback = { day, slot };
     }
@@ -534,5 +519,5 @@ function typing(target: EventTarget | null): boolean {
 }
 
 function isArrow(key: string): boolean {
-  return key === 'ArrowUp' || key === 'ArrowDown' || key === 'ArrowLeft' || key === 'ArrowRight';
+  return matchesKey('navigation', key);
 }

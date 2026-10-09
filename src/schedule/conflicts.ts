@@ -241,7 +241,7 @@ function teacherStopText(
 
 function noRoomText(section: Section, rooms: Room[]): string {
   const fits = rooms.some((room) => room.capacity >= section.studentsCount);
-  if (fits === null || fits === undefined) return 'Нет аудитории нужной вместимости';
+  if (!fits) return 'Нет аудитории нужной вместимости';
 
   return 'Нет свободной аудитории';
 }

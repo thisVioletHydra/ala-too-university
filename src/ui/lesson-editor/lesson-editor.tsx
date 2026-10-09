@@ -1,5 +1,5 @@
 import { sectionTeacher } from '#schedule/section-teacher.ts';
-import type { EditorRequest } from '#app/providers.tsx';
+import type { EditorRequest } from '#interaction/types.ts';
 import type { Lesson, ScheduleCatalog, WeekDay } from '#schedule/types.ts';
 
 import { editLesson, placeFromEditor } from '#features/edit-lesson.ts';

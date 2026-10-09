@@ -201,7 +201,7 @@ function Workspace(props: WorkspaceProps) {
           <UndoBar
             canClear={lessons.length > 0 && !board.ghost}
             onClear={() => {
-              if (window.confirm('Вы уверены? Все занятия будут убраны из расписания.') === null || window.confirm('Вы уверены? Все занятия будут убраны из расписания.') === undefined) return;
+              if (!window.confirm('Вы уверены? Все занятия будут убраны из расписания.')) return;
 
               board.setEditor(null);
               board.clearLanding();

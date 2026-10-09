@@ -1,3 +1,4 @@
+import { sectionRows } from '#features/section-groups.ts';
 import type { ListMode } from '#features/use-search.ts';
 import type { Lesson, Section, Teacher } from '#schedule/types.ts';
 import { Select } from '#ui/select/select.tsx';
@@ -38,6 +39,7 @@ type SectionListProps = {
 
 export function SectionList(props: SectionListProps) {
   const board = useBoard();
+  const rows = sectionRows(props);
   const unassign = useDroppable({ id: 'unassign', data: { kind: 'unassign' } });
   const titles: Record<ListMode, string> = { all: 'Все секции', 'not-done': 'Осталось распределить', done: 'Готовые секции', 'no-teacher': 'Нужен преподаватель', excess: 'Дополнительные занятия' };
 
@@ -128,12 +130,15 @@ export function SectionList(props: SectionListProps) {
               </p>
             )
             : null}
-          {props.sections.map((section, index) => (
+          {rows.map(({ section, index, first, last, heading }) => (
             <Fragment key={section.id}>
-              {(props.groupBy === 'course' ? props.sections[index - 1]?.courseId === section.courseId : index > 0 && props.teacherName(props.sections[index - 1]) === props.teacherName(section)) ? null : <div className={styles.group} data-section-group role="heading" aria-level={2} data-course={section.courseId}><span>{props.groupBy === 'course' ? props.courseName(section) : props.teacherName(section) ?? 'Нужен преподаватель'}<small>{props.groupBy === 'course' ? `Преподавателей: ${new Set(props.sections.filter((item) => item.courseId === section.courseId).map(props.teacherName).filter(Boolean)).size}` : 'Дисциплины преподавателя'}</small></span>{props.groupBy === 'course' ? <small>{props.courseCode(section)}</small> : null}</div>}
-            <div className={styles.linkedCard}
-              data-first={index === 0 || (props.groupBy === 'course' ? props.sections[index - 1]?.courseId !== section.courseId : props.teacherName(props.sections[index - 1]) !== props.teacherName(section)) ? 'yes' : 'no'}
-              data-last={index === props.sections.length - 1 || (props.groupBy === 'course' ? props.sections[index + 1]?.courseId !== section.courseId : props.teacherName(props.sections[index + 1]) !== props.teacherName(section)) ? 'yes' : 'no'}>
+              {heading ? (
+                <div className={styles.group} data-section-group role="heading" aria-level={2} data-course={section.courseId}>
+                  <span>{heading.title}<small>{heading.detail}</small></span>
+                  {heading.code ? <small>{heading.code}</small> : null}
+                </div>
+              ) : null}
+              <div className={styles.linkedCard} data-first={first ? 'yes' : 'no'} data-last={last ? 'yes' : 'no'}>
             <span className={styles.groupDot} aria-hidden="true" />
             <SectionCard
               key={section.id}

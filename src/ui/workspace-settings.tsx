@@ -1,3 +1,4 @@
+import { keyboardHints } from '#interaction/keyboard.ts';
 import type { Dataset } from '#app/schedule.store.ts';
 
 import { useBoard } from '#app/providers.tsx';
@@ -46,15 +47,8 @@ export function WorkspaceSettings(props: { dataset: Dataset; onDataset: (dataset
     };
   }, []);
 
-  const shortcuts = settingsOpen
-    ? [['Tab', 'следующая настройка'], ['Пробел', 'переключить'], ['Esc', 'закрыть']]
-    : pickerOpen
-    ? [['↑ ↓', 'выбрать занятие'], ['Enter', 'править'], ['Пробел', 'взять'], ['Esc', 'вернуться в сетку']]
-    : board.editor
-    ? [['↑ ↓ ← →', 'поля / кнопки'], ['Enter', 'открыть / подтвердить'], ['Tab', 'следующее поле'], ['Esc', 'закрыть']]
-    : board.hold.hand
-      ? [['↑↓←→', 'навигация'], ['Пробел', 'поставить'], ['Shift', 'режимы'], ['Enter', 'править'], ['Del / Backspace', 'удалить'], ['Tab', 'область'], ['Esc', 'отмена']]
-      : [['↑↓←→', 'навигация'], ['Пробел', 'взять'], ['Enter', 'открыть'], ['Tab', 'дальше']];
+  const context = settingsOpen ? 'settings' : pickerOpen ? 'picker' : board.editor ? 'editor' : board.hold.hand ? 'holding' : 'navigation';
+  const shortcuts = keyboardHints[context];
   const hintsSlot = document.getElementById('keyboard-hints-slot');
 
   return <>

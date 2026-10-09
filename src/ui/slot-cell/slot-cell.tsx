@@ -1,7 +1,7 @@
 import type { SlotAdvice } from '#schedule/conflicts.ts';
 import type { Lesson, WeekDay } from '#schedule/types.ts';
 import type { ReactNode, RefObject } from 'react';
-import type { ActiveDrag, Hand } from '#app/providers.tsx';
+import type { ActiveDrag, Hand } from '#interaction/types.ts';
 
 import { useDroppable } from '@dnd-kit/core';
 import { slotKey, useBoard } from '#app/providers.tsx';
@@ -57,7 +57,7 @@ export function SlotCell(props: SlotCellProps) {
       tabIndex={props.tabStop ? 0 : -1}
       onPointerOver={props.onPoint}
       onFocus={(event) => {
-        if (event.target.matches(':focus-visible') === null || event.target.matches(':focus-visible') === undefined) return;
+        if (!event.target.matches(':focus-visible')) return;
 
         event.stopPropagation();
         props.onFocus();

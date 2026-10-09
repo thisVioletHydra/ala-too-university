@@ -1,5 +1,9 @@
+import { resolveCursorState, ownsAnimation } from '#interaction/cursor-state.ts';
+import type { CursorState } from '#interaction/cursor-state.ts';
+import { acceptsPointer } from '#interaction/input-policy.ts';
+import { isInteractionKey } from '#interaction/keyboard.ts';
 import type { Lesson, ScheduleCatalog } from '#schedule/types.ts';
-import type { ActiveDrag, Hand, Landing } from '#app/providers.tsx';
+import type { ActiveDrag, Hand, Landing } from '#interaction/types.ts';
 import type { ReactNode } from 'react';
 import type { DropAnimation } from '@dnd-kit/core';
 
@@ -87,13 +91,6 @@ export function DragGhost(props: { catalog: ScheduleCatalog }) {
   );
 }
 
-type CursorState =
-  | { phase: 'idle' }
-  | { phase: 'holding', input: 'pointer' | 'keyboard' }
-  | { phase: 'paused' }
-  | { phase: 'placing', target: Landing, token: number }
-  | { phase: 'returning', token: number };
-
 export function HandCursor(props: { catalog: ScheduleCatalog }) {
   const board = useBoard();
   const lessons = useSchedule((state) => state.lessons);
@@ -111,13 +108,14 @@ export function HandCursor(props: { catalog: ScheduleCatalog }) {
   useLayoutEffect(() => {
     const el = node.current;
     const token = ++generation.current;
-    if (board.editor) {
-      cursor.current = { phase: 'paused' };
+    const alreadyHolding = cursor.current.phase === 'holding';
+    const next = resolveCursorState({ editing: board.editor !== null, carrying: hand !== null, input: input.current, landing: board.landing, token });
+    cursor.current = next;
+    if (next.phase === 'paused') {
       return;
     }
     if (hand) {
-      const alreadyHolding = cursor.current.phase === 'holding';
-      cursor.current = { phase: 'holding', input: input.current };
+
       snapshot.current = card;
       if (board.landing) complete();
       if (!el) return;
@@ -136,12 +134,10 @@ export function HandCursor(props: { catalog: ScheduleCatalog }) {
     }
     const landing = board.landing;
     if (!landing) {
-      cursor.current = { phase: 'idle' };
       snapshot.current = null;
       return;
     }
     const returning = landing.kind === 'tray';
-    cursor.current = returning ? { phase: 'returning', token } : { phase: 'placing', target: landing, token };
     const target = returning ? null : landingBox(landing);
     if (!el || (!returning && !target) || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
       complete();
@@ -161,7 +157,7 @@ export function HandCursor(props: { catalog: ScheduleCatalog }) {
     });
     animation.onfinish = () => {
       const state = cursor.current;
-      if ((state.phase !== 'placing' && state.phase !== 'returning') || state.token !== token) return;
+      if (!ownsAnimation(state, token)) return;
       flushSync(() => complete());
     };
     return () => {
@@ -172,8 +168,11 @@ export function HandCursor(props: { catalog: ScheduleCatalog }) {
 
   useEffect(() => {
     function point(event: PointerEvent): void {
-      if (!event.isPrimary || (event.clientX === 0 && event.clientY === 0)) return;
-      if (event.type === 'pointermove' && input.current === 'keyboard' && Math.hypot(event.movementX, event.movementY) < 6) return;
+      const pointerAllowed = acceptsPointer(input.current, {
+        primary: event.isPrimary, eventType: event.type, x: event.clientX, y: event.clientY,
+        movementX: event.movementX, movementY: event.movementY,
+      });
+      if (!pointerAllowed) return;
       pointer.current = { x: event.clientX, y: event.clientY };
       input.current = 'pointer';
       document.body.dataset.cardInput = 'pointer';
@@ -185,7 +184,7 @@ export function HandCursor(props: { catalog: ScheduleCatalog }) {
       placeAt(el, event.clientX, event.clientY);
     }
     function key(event: KeyboardEvent): void {
-      if (![' ', 'Spacebar', 'Tab', 'Enter', 'Shift', 'Delete', 'Backspace', 'Escape'].includes(event.key) && !event.key.startsWith('Arrow')) return;
+      if (!isInteractionKey(event.key)) return;
       input.current = 'keyboard';
       document.body.dataset.cardInput = 'keyboard';
       if (cursor.current.phase === 'holding') cursor.current = { phase: 'holding', input: 'keyboard' };
