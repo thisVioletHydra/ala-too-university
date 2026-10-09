@@ -102,7 +102,7 @@ function isHomeCell(
   day: WeekDay,
   timeSlotId: string,
 ): boolean {
-  const carried = ghost?.kind === 'lesson' && !ghost.copy
+  const carried = ghost?.kind === 'lesson'
     ? ghost.lessonId
     : hand?.kind === 'lesson'
       ? hand.lessonId
