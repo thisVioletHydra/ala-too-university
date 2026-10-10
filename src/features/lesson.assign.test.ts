@@ -2,7 +2,7 @@ import type { ScheduleCatalog } from '#schedule/types.ts';
 
 import { afterEach, expect, it } from 'vitest';
 import { useSchedule } from '#app/schedule.store.ts';
-import { adviceMap } from '#app/board-derived.ts';
+import { adviceMap } from '#app/board.derived.ts';
 import { assignLesson } from './lesson.assign.ts';
 
 const catalog: ScheduleCatalog = {

@@ -31,13 +31,15 @@ export function adviceMap(
   const section = catalog.sections.find((item) => item.id === sectionId);
   if (section === null || section === undefined) return map;
 
-  const teacherId = lesson
-    ? lesson.teacherId
-    : active.kind === 'section' ? sectionTeacher(section, lessons, remembered) : null;
+  let teacherId: string | null = null;
   let roomId: string | null = null;
-  if (lesson) roomId = lesson.roomId;
-
-  if (active.kind === 'section') roomId = active.roomId ?? null;
+  if (lesson) {
+    teacherId = lesson.teacherId;
+    roomId = lesson.roomId;
+  } else if (active.kind === 'section') {
+    teacherId = sectionTeacher(section, lessons, remembered);
+    roomId = active.roomId ?? null;
+  }
 
   const excludeLessonId = active.kind === 'lesson' && !active.copy && !repeat ? active.lessonId : undefined;
 

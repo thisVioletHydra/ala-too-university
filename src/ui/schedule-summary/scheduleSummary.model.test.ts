@@ -2,7 +2,7 @@ import type { Lesson, ScheduleCatalog } from '#schedule/types.ts';
 import type { SummaryInput } from './scheduleSummary.model.ts';
 
 import { describe, expect, it } from 'vitest';
-import { adviceMap, handToDrag } from '#app/board-derived.ts';
+import { adviceMap, handToDrag } from '#app/board.derived.ts';
 import { emptyHold } from '#interaction/types.ts';
 import { transferSummary } from './scheduleSummary.model.ts';
 

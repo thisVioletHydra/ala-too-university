@@ -5,7 +5,7 @@ import type { ActiveDrag, DropTarget, EditorRequest, Hand, Hold } from '#interac
 import { announce } from '#accessible/reader.announcements.ts';
 import { emptyHold } from '#interaction/types.ts';
 import { assignLesson } from '#features/lesson.assign.ts';
-import { altKey, isDay, isRecord } from '#app/board-derived.ts';
+import { altKey, isDay, isRecord } from '#app/board.derived.ts';
 import { isOutsideBounds } from '#interaction/bounds.ts';
 import { slotKey } from '#interaction/slot.key.ts';
 import { useSchedule } from '#app/schedule.store.ts';
@@ -114,9 +114,16 @@ export function useDndHandlers(deps: DndDeps) {
 
     if (repeatKey.current && removeMatching(current, { kind: 'slot', day: data.day, timeSlotId: data.timeSlotId })) return;
 
-    if (current.kind === 'section') {
+    if (current.kind === 'section' || repeatKey.current) {
+      const source = current.kind === 'lesson'
+        ? useSchedule.getState().lessons.find((lesson) => lesson.id === current.lessonId)
+        : current;
+      if (source === null || source === undefined) return;
+
       const outcome = assignLesson({
-        sectionId: current.sectionId,
+        sectionId: source.sectionId,
+        teacherId: source.teacherId,
+        roomId: source.roomId,
         day: data.day,
         timeSlotId: data.timeSlotId,
       });
@@ -125,7 +132,7 @@ export function useDndHandlers(deps: DndDeps) {
       if (outcome.type === 'edit') {
         setEditor({
           mode: 'create',
-          sectionId: current.sectionId,
+          sectionId: source.sectionId,
           day: data.day,
           timeSlotId: data.timeSlotId,
           teacherId: outcome.teacherId,
@@ -137,21 +144,7 @@ export function useDndHandlers(deps: DndDeps) {
       return;
     }
 
-    if (current.copy || repeatKey.current) {
-      if (repeatKey.current) {
-        const source = useSchedule.getState().lessons.find((item) => item.id === current.lessonId);
-        if (source === null || source === undefined) return;
-
-        const outcome = assignLesson({ sectionId: source.sectionId, teacherId: source.teacherId, roomId: source.roomId, day: data.day, timeSlotId: data.timeSlotId });
-        if (outcome.type === 'rejected') announce(outcome.text);
-
-        if (outcome.type === 'edit') {
-          setEditor({ mode: 'create', sectionId: source.sectionId, day: data.day, timeSlotId: data.timeSlotId, teacherId: outcome.teacherId, roomId: outcome.roomId, text: outcome.text });
-        }
-
-        return;
-      }
-
+    if (current.copy) {
       const outcome = useSchedule.getState().copyLesson({ lessonId: current.lessonId, day: data.day, timeSlotId: data.timeSlotId });
       if (outcome.ok === false) announce(outcome.text);
 
