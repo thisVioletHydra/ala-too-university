@@ -1,8 +1,10 @@
+import { SelectOption } from './select.option.tsx';
+import { matchesAnyKey, matchesKey } from '#accessible/keyboard.bindings.ts';
 import { useEffect, useId, useRef, useState } from 'react';
 
 import styles from '#ui/select/select.module.css';
 
-type Option = { value: string; label: string; disabled?: boolean; detail?: string };
+export type Option = { value: string; label: string; disabled?: boolean; detail?: string };
 
 /** Печатный символ без служебных модификаторов — годится для поиска по первым буквам. */
 function isTypeahead(event: { key: string; metaKey: boolean; ctrlKey: boolean; altKey: boolean }): boolean {
@@ -51,79 +53,89 @@ export function Select(props: { label: string; value: string; options: Option[];
     }
   }
 
+  function selectOption(value: string): void {
+    props.onChange(value);
+    setOpen(false);
+  }
+
+  function toggleMenu(): void {
+    setActive(selected);
+    setOpen(!open);
+  }
+
+  function handleKeyDown(event: React.KeyboardEvent<HTMLButtonElement>): void {
+    if (matchesKey('switchArea', event.key)) { setOpen(false);
+
+      return;
+    }
+
+    if (matchesKey('cancel', event.key) && open) { event.preventDefault();
+      event.stopPropagation();
+      setOpen(false);
+
+      return;
+    }
+
+    if (matchesAnyKey(['next', 'previous', 'first', 'last', 'edit', 'place'], event.key)) {
+      event.preventDefault();
+      event.stopPropagation();
+      if (!open) { setActive(selected);
+        setOpen(true);
+
+        return;
+      }
+
+      if (matchesKey('next', event.key) || matchesKey('previous', event.key)) { move(matchesKey('next', event.key) ? 1 : -1);
+
+        return;
+      }
+
+      if (matchesKey('first', event.key) || matchesKey('last', event.key)) {
+        const indices = props.options.map((option, index) => option.disabled ? -1 : index).filter((index) => index >= 0);
+        setActive(matchesKey('first', event.key) ? indices[0] ?? 0 : indices.at(-1) ?? 0);
+
+        return;
+      }
+
+      const option = props.options[active];
+      if (option && !option.disabled) props.onChange(option.value);
+
+      setOpen(false);
+
+      return;
+    }
+
+    if (isTypeahead(event)) {
+      event.preventDefault();
+      event.stopPropagation();
+      search.current.text = Date.now() - search.current.time < 700 ? search.current.text + event.key : event.key;
+      search.current.time = Date.now();
+      const found = props.options.findIndex((option) => !option.disabled && option.label.toLocaleLowerCase().startsWith(search.current.text.toLocaleLowerCase()));
+      if (found >= 0) { setActive(found);
+        setOpen(true);
+      }
+    }
+  }
+
   return <div className={styles.field} ref={root} onBlur={(event) => { if (event.currentTarget.contains(event.relatedTarget) === false) setOpen(false); }}>
     <button type="button" role="combobox" className={styles.trigger} aria-label={props.label} title={`${props.label}: ${props.options[selected]?.label}`} aria-haspopup="listbox" aria-expanded={open} aria-controls={id} aria-activedescendant={open ? `${id}-${active}` : undefined} data-filtered={props.value ? 'yes' : 'no'}
-      onClick={() => { setActive(selected);
-        setOpen(!open);
-      }}
-      onKeyDown={(event) => {
-        if (event.key === 'Tab') { setOpen(false);
-
-          return;
-        }
-
-        if (event.key === 'Escape' && open) { event.preventDefault();
-          event.stopPropagation();
-          setOpen(false);
-
-          return;
-        }
-
-        if (['ArrowDown', 'ArrowUp', 'Home', 'End', 'Enter', ' '].includes(event.key)) {
-          event.preventDefault();
-          event.stopPropagation();
-          if (!open) { setActive(selected);
-            setOpen(true);
-
-            return;
-          }
-
-          if (event.key === 'ArrowDown' || event.key === 'ArrowUp') { move(event.key === 'ArrowDown' ? 1 : -1);
-
-            return;
-          }
-
-          if (event.key === 'Home' || event.key === 'End') {
-            const indices = props.options.map((option, index) => option.disabled ? -1 : index).filter((index) => index >= 0);
-            setActive(event.key === 'Home' ? indices[0] ?? 0 : indices.at(-1) ?? 0);
-
-            return;
-          }
-
-          const option = props.options[active];
-          if (option && !option.disabled) props.onChange(option.value);
-
-          setOpen(false);
-
-          return;
-        }
-
-        if (isTypeahead(event)) {
-          event.preventDefault();
-          event.stopPropagation();
-          search.current.text = Date.now() - search.current.time < 700 ? search.current.text + event.key : event.key;
-          search.current.time = Date.now();
-          const found = props.options.findIndex((option) => !option.disabled && option.label.toLocaleLowerCase().startsWith(search.current.text.toLocaleLowerCase()));
-          if (found >= 0) { setActive(found);
-            setOpen(true);
-          }
-        }
-      }}>
+      onClick={toggleMenu}
+      onKeyDown={handleKeyDown}>
       <span>{props.options[selected]?.label}</span>
       <svg viewBox="0 0 16 16" width="16" height="16" fill="none" aria-hidden="true"><path d="m4 6 4 4 4-4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
     </button>
     {open ? <div id={id} role="listbox" aria-label={props.label} className={styles.menu}>
-      {props.options.map((option, index) => <div key={option.value} id={`${id}-${index}`} role="option" aria-selected={option.value === props.value} aria-disabled={option.disabled || undefined} data-active={index === active ? 'yes' : 'no'} className={styles.option}
-        onPointerDown={(event) => event.preventDefault()}
-        onPointerMove={() => { if (!option.disabled) setActive(index); }}
-        onClick={(event) => { event.preventDefault();
-          event.stopPropagation();
-          if (!option.disabled) { props.onChange(option.value);
-            setOpen(false);
-          }
-        }}>
-        <span>{option.label}{option.detail ? <small>{option.detail}</small> : null}</span><span aria-hidden="true">{option.value === props.value ? '✓' : ''}</span>
-      </div>)}
+      {props.options.map((option, index) => (
+        <SelectOption
+          key={option.value}
+          id={`${id}-${index}`}
+          option={option}
+          selected={option.value === props.value}
+          active={index === active}
+          onHover={() => setActive(index)}
+          onSelect={selectOption}
+        />
+      ))}
     </div> : null}
   </div>;
 }

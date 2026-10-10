@@ -1,6 +1,6 @@
 import type { Dataset } from '#app/schedule.store.ts';
 
-import { keyboardHints } from '#interaction/keyboard.ts';
+import { keyboardHints, matchesAnyKey } from '#accessible/keyboard.bindings.ts';
 import { useBoard } from '#app/providers.tsx';
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
@@ -28,7 +28,7 @@ export function WorkspaceSettings(props: { dataset: Dataset; onDataset: (dataset
   useEffect(() => {
     let hideTimer: ReturnType<typeof setTimeout> | undefined;
     function onKey(event: KeyboardEvent): void {
-      if (['Tab', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter', ' ', 'Escape'].includes(event.key)) {
+      if (matchesAnyKey(['switchArea', 'navigation', 'edit', 'place', 'cancel'], event.key)) {
         clearTimeout(hideTimer);
         setKeyboard(true);
       }
@@ -50,9 +50,29 @@ export function WorkspaceSettings(props: { dataset: Dataset; onDataset: (dataset
     };
   }, []);
 
-  const context = settingsOpen ? 'settings' : pickerOpen ? 'picker' : board.editor ? 'editor' : board.hold.hand ? 'holding' : 'navigation';
+  let context: keyof typeof keyboardHints = 'navigation';
+  if (board.hold.hand) context = 'holding';
+
+  if (board.editor) context = 'editor';
+
+  if (pickerOpen) context = 'picker';
+
+  if (settingsOpen) context = 'settings';
+
   const shortcuts = keyboardHints[context];
   const hintsSlot = document.getElementById('keyboard-hints-slot');
+
+  function handleHintsChange(event: React.ChangeEvent<HTMLInputElement>): void {
+    const enabled = event.target.checked;
+    setHints(enabled);
+    localStorage.setItem('schedule-keyboard-hints', enabled ? 'on' : 'off');
+  }
+
+  function handleDatasetChange(event: React.ChangeEvent<HTMLInputElement>): void {
+    board.setEditor(null);
+    board.setHold({ hand: null, aim: '', overKey: null, overList: false });
+    props.onDataset(event.target.checked ? 'bulk' : 'mock');
+  }
 
   return <>
     <button className="settings-trigger" type="button" popoverTarget="workspace-settings" aria-label="Настройки" title="Настройки">
@@ -63,13 +83,8 @@ export function WorkspaceSettings(props: { dataset: Dataset; onDataset: (dataset
     </button>
     <div id="workspace-settings" className="settings-popover" popover="auto" aria-labelledby="settings-title" onToggle={(event) => setSettingsOpen(event.newState === 'open')}>
       <header><h2 id="settings-title">Настройки</h2><button type="button" popoverTarget="workspace-settings" popoverTargetAction="hide" aria-label="Закрыть настройки">×</button></header>
-      <label className="settings-row"><span><strong>Клавиатурные подсказки</strong><small>Появляются в шапке при работе с клавиатурой</small></span><input type="checkbox" role="switch" checked={hints} onChange={(event) => { setHints(event.target.checked);
-        localStorage.setItem('schedule-keyboard-hints', event.target.checked ? 'on' : 'off');
-      }} /></label>
-      <label className="settings-row"><span><strong>500 секций</strong><small>Выключено — базовый набор моков. Переключение сбрасывает расписание.</small></span><input type="checkbox" role="switch" checked={props.dataset === 'bulk'} onChange={(event) => { board.setEditor(null);
-        board.setHold({ hand: null, aim: '', overKey: null, overList: false });
-        props.onDataset(event.target.checked ? 'bulk' : 'mock');
-      }} /></label>
+      <label className="settings-row"><span><strong>Клавиатурные подсказки</strong><small>Появляются в шапке при работе с клавиатурой</small></span><input type="checkbox" role="switch" checked={hints} onChange={handleHintsChange} /></label>
+      <label className="settings-row"><span><strong>500 секций</strong><small>Выключено — базовый набор моков. Переключение сбрасывает расписание.</small></span><input type="checkbox" role="switch" checked={props.dataset === 'bulk'} onChange={handleDatasetChange} /></label>
     </div>
     {hints && keyboard && hintsSlot ? createPortal(<div className="keyboard-hints" aria-label="Клавиатурные подсказки">{shortcuts.map(([key, text]) => <span key={key}><kbd>{key}</kbd>{text}</span>)}</div>, hintsSlot) : null}
   </>;

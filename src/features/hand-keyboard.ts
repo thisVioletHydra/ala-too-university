@@ -4,7 +4,7 @@ import type { Hand } from '#interaction/types.ts';
 import type { HandInput, HandStep, Zone } from '#features/hand-types.ts';
 
 import { navigateSidebar } from '#accessible/sidebar-navigation.ts';
-import { hasCommandModifier, matchesKey } from '#interaction/keyboard.ts';
+import { hasCommandModifier, matchesKey } from '#accessible/keyboard.bindings.ts';
 import { navigationPermissions } from '#interaction/input-policy.ts';
 import { keyboardGrid } from '#accessible/keyboard-grid.ts';
 import { keyboardSlot } from '#accessible/keyboard-slot.ts';
@@ -151,7 +151,7 @@ export function handleHandKey(context: HandKeyContext): void {
     event.preventDefault();
     keys.current = true;
     if (place === 'list') {
-      if (event.key === 'ArrowDown' && list === input.sections.length - 1 && !hand) {
+      if (matchesKey('next', event.key) && list === input.sections.length - 1 && !hand) {
         const issue = document.querySelector<HTMLButtonElement>('#sections-panel footer button');
         if (issue) {
           issue.focus();
@@ -160,7 +160,7 @@ export function handleHandKey(context: HandKeyContext): void {
         }
       }
 
-      if (event.key === 'ArrowUp' && list === 0 && !hand) {
+      if (matchesKey('previous', event.key) && list === 0 && !hand) {
         document.getElementById('section-search')?.focus();
 
         return;

@@ -1,6 +1,6 @@
 import type { Hand } from './types.ts';
 
-import { matchesKey } from './keyboard.ts';
+import { matchesKey } from '#accessible/keyboard.bindings.ts';
 
 export type GroupView = 'single' | 'pair' | 'strips';
 export type GroupCommand = 'ignore' | 'open-picker' | 'focus-first' | 'reorder-up' | 'reorder-down' | 'confirm-order';
@@ -36,14 +36,13 @@ export function groupCommand(context: GroupContext): GroupCommand {
 
   if (context.hand.kind !== 'lesson' || !context.lessonIds.includes(context.hand.lessonId)) return 'ignore';
 
-  const reorderKeys: Record<string, GroupCommand> = {
-    ArrowUp: 'reorder-up',
-    ArrowDown: 'reorder-down',
-    ' ': 'confirm-order',
-    Spacebar: 'confirm-order',
-  };
+  if (matchesKey('previous', context.key)) return 'reorder-up';
 
-  return reorderKeys[context.key] ?? 'ignore';
+  if (matchesKey('next', context.key)) return 'reorder-down';
+
+  if (matchesKey('place', context.key)) return 'confirm-order';
+
+  return 'ignore';
 }
 
 export type PickerState = 'closed' | 'selecting' | 'suspended-for-editor';

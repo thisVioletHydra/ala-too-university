@@ -1,4 +1,4 @@
-import type { InputMethod } from './keyboard.ts';
+import type { InputMethod } from '#accessible/keyboard.bindings.ts';
 import type { Landing } from './types.ts';
 
 export type CursorState =

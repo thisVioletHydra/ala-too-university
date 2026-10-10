@@ -1,3 +1,5 @@
+import { keyboard, matchesKey } from '#accessible/keyboard.bindings.ts';
+
 export type SidebarTarget =
   | { kind: 'search' }
   | { kind: 'status'; index: number }
@@ -25,15 +27,15 @@ export function sidebarDestination(input: SidebarInput): SidebarDestination {
   const { target, key } = input;
   if (target.kind === 'search') {
     const directions: Record<string, SidebarDestination> = {
-      ArrowUp: { kind: 'status', index: input.selectedStatus },
-      ArrowDown: input.cardCount > 0 ? { kind: 'card', index: 0 } : { kind: 'unhandled' },
+      [keyboard.previous[0]]: { kind: 'status', index: input.selectedStatus },
+      [keyboard.next[0]]: input.cardCount > 0 ? { kind: 'card', index: 0 } : { kind: 'unhandled' },
     };
 
     return directions[key] ?? { kind: 'unhandled' };
   }
 
   if (target.kind === 'status') {
-    if (key === 'ArrowDown') return { kind: 'search' };
+    if (matchesKey('next', key)) return { kind: 'search' };
 
     const direction = horizontalDirection[key] ?? 0;
 
@@ -41,7 +43,7 @@ export function sidebarDestination(input: SidebarInput): SidebarDestination {
   }
 
   if (target.kind === 'issue') {
-    if (key === 'ArrowUp' && target.index === 0) {
+    if (matchesKey('previous', key) && target.index === 0) {
       return input.cardCount > 0 ? { kind: 'card', index: input.cardCount - 1 } : { kind: 'search' };
     }
 
@@ -53,8 +55,8 @@ export function sidebarDestination(input: SidebarInput): SidebarDestination {
   return { kind: 'unhandled' };
 }
 
-const horizontalDirection: Record<string, number> = { ArrowLeft: -1, ArrowRight: 1 };
-const verticalDirection: Record<string, number> = { ArrowUp: -1, ArrowDown: 1 };
+const horizontalDirection: Record<string, number> = { [keyboard.left[0]]: -1, [keyboard.right[0]]: 1 };
+const verticalDirection: Record<string, number> = { [keyboard.previous[0]]: -1, [keyboard.next[0]]: 1 };
 function bounded(index: number, count: number): number {
   return Math.max(0, Math.min(count - 1, index));
 }

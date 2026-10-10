@@ -155,7 +155,7 @@
 
 .strip:hover { box-shadow: 0 0 0 1px rgb(109 168 245 / 30%); }
 
-.insertion { z-index: 4; pointer-events: none; padding-left: 2rem; }
+.insertion { z-index: 4; pointer-events: auto; cursor: pointer; padding-left: 2rem; }
 
 .insertion { background: transparent; }
 .reorderItem:has(.insertion) > div button[data-action='cancel'] { color: transparent; }

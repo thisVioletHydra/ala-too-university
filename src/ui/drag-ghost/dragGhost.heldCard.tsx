@@ -1,6 +1,7 @@
 import type { ActiveDrag } from '#interaction/types.ts';
 import type { Lesson, ScheduleCatalog } from '#schedule/types.ts';
 
+import { TEACHER_PLACEHOLDER } from '#ui/teacher-label.ts';
 import { LessonPreview } from '#ui/lesson-card/lesson-card.tsx';
 
 export function heldCard(
@@ -45,7 +46,7 @@ export function heldCard(
       courseCode={course?.code ?? section.code}
       courseName={course?.name ?? section.code}
       code={section.code}
-      teacherName={teacher?.shortName ?? 'Нужен преподаватель'}
+      teacherName={teacher?.shortName ?? TEACHER_PLACEHOLDER}
       roomName={room.name}
       roomType={room.type}
       preferredRoomType={section.preferredRoomType}

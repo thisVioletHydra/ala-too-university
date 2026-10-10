@@ -1,5 +1,6 @@
-import type { Course, Lesson, Room, ScheduleCatalog, Section, Teacher, WeekDay } from '#schedule/types.ts';
+import type { Lesson, ScheduleCatalog, WeekDay } from '#schedule/types.ts';
 
+import { lessonCards } from './scheduleGrid.cards.ts';
 import { SlotLessons } from '#ui/schedule-grid/slot-lessons.tsx';
 import { SlotCell } from '#ui/slot-cell/slot-cell.tsx';
 import { Fragment } from 'react';
@@ -51,41 +52,21 @@ export function ScheduleGrid(props: ScheduleGridProps) {
             const lessons = props.lessons.filter((lesson) => {
               return lesson.day === day.id && lesson.timeSlotId === timeSlot.id;
             });
+            const items = lessonCards({ catalog: props.catalog, lessons, teacherId: props.teacherId, roomId: props.roomId, dayIndex, slotIndex, onGrab: props.onGrab, onDrop: props.onDrop });
+            const unavailable = props.teacherId !== null && props.catalog.blockedSlots.some((blocked) => blocked.teacherId === props.teacherId && blocked.day === day.id && blocked.timeSlotId === timeSlot.id);
             return (
               <SlotCell
                 key={day.id}
                 day={day.id}
                 timeSlotId={timeSlot.id}
-                unavailable={props.teacherId !== null && props.catalog.blockedSlots.some((blocked) => blocked.teacherId === props.teacherId && blocked.day === day.id && blocked.timeSlotId === timeSlot.id)}
+                unavailable={unavailable}
                 tabStop={dayIndex === props.dayIndex && slotIndex === props.slotIndex}
                 onPoint={() => props.onPoint(dayIndex, slotIndex)}
                 onFocus={() => props.onFocus(dayIndex, slotIndex)}
                 onDrop={() => props.onDrop(dayIndex, slotIndex)}
                 label={`${day.label}, ${timeSlot.start}–${timeSlot.end}, занятий: ${lessons.length}`}
               >
-                <SlotLessons label={`${day.label} · ${timeSlot.start}–${timeSlot.end}`} items={lessons.map((lesson) => {
-                  const section = findSection(props.catalog, lesson.sectionId);
-                  const teacher = findTeacher(props.catalog, lesson.teacherId);
-                  const room = findRoom(props.catalog, lesson.roomId);
-                  if (!section || !room) return null;
-
-                  return {
-                    lessonId: lesson.id,
-                    sectionId: section.id,
-                    courseId: section.courseId,
-                    courseCode: findCourse(props.catalog, section.courseId)?.code ?? section.code,
-                    courseName: findCourse(props.catalog, section.courseId)?.name ?? section.code,
-                    code: section.code,
-                    teacherName: teacher?.shortName ?? 'Нужен преподаватель',
-                    roomName: room.name,
-                    roomType: room.type,
-                    preferredRoomType: section.preferredRoomType,
-                    highlighted: false,
-                    dimmed: (props.teacherId !== null || props.roomId !== null) && !highlighted(lesson, props.teacherId, props.roomId),
-                    onGrab: () => props.onGrab(lesson.id, dayIndex, slotIndex),
-                    onDrop: () => props.onDrop(dayIndex, slotIndex),
-                  };
-                }).filter((item) => item !== null)} />
+                <SlotLessons label={`${day.label} · ${timeSlot.start}–${timeSlot.end}`} items={items} />
               </SlotCell>
             );
           })}
@@ -93,30 +74,4 @@ export function ScheduleGrid(props: ScheduleGridProps) {
       ))}
     </div>
   );
-}
-
-function highlighted(lesson: Lesson, teacherId: string | null, roomId: string | null): boolean {
-  if (!teacherId && !roomId) return false;
-
-  if (teacherId && lesson.teacherId !== teacherId) return false;
-
-  if (roomId && lesson.roomId !== roomId) return false;
-
-  return true;
-}
-
-function findCourse(catalog: ScheduleCatalog, id: string): Course | undefined {
-  return catalog.courses.find((item) => item.id === id);
-}
-
-function findSection(catalog: ScheduleCatalog, id: string): Section | undefined {
-  return catalog.sections.find((item) => item.id === id);
-}
-
-function findTeacher(catalog: ScheduleCatalog, id: string): Teacher | undefined {
-  return catalog.teachers.find((item) => item.id === id);
-}
-
-function findRoom(catalog: ScheduleCatalog, id: string): Room | undefined {
-  return catalog.rooms.find((item) => item.id === id);
 }

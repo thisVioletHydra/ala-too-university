@@ -2,7 +2,7 @@ import type { SlotAdvice } from '#schedule/conflicts.ts';
 import type { Lesson, WeekDay } from '#schedule/types.ts';
 import type { Zone } from '#features/hand-types.ts';
 
-import { matchesKey } from '#interaction/keyboard.ts';
+import { matchesKey } from '#accessible/keyboard.bindings.ts';
 import { slotKey } from '#interaction/slot-key.ts';
 
 export function firstOpen(

@@ -13,11 +13,14 @@ type FiltersProps = {
   onRoom: (id: string | null) => void
 };
 
-export function Filters(props: FiltersProps) {
+export function Filters({ teachers, rooms, teacherId, roomId, onTeacher, onRoom }: FiltersProps) {
+  const teacherOptions = [{ value: '', label: 'Преподаватели' }, ...teachers.map((teacher) => ({ value: teacher.id, label: teacher.shortName }))];
+  const roomOptions = [{ value: '', label: 'Аудитории' }, ...rooms.map((room) => ({ value: room.id, label: room.name, detail: `${room.capacity} мест` }))];
+
   return (
     <div className={styles.row}>
-      <Select label="Преподаватель" value={props.teacherId ?? ''} onChange={(value) => props.onTeacher(value || null)} options={[{ value: '', label: 'Преподаватели' }, ...props.teachers.map((teacher) => ({ value: teacher.id, label: teacher.shortName }))]} />
-      <Select label="Аудитория" value={props.roomId ?? ''} onChange={(value) => props.onRoom(value || null)} options={[{ value: '', label: 'Аудитории' }, ...props.rooms.map((room) => ({ value: room.id, label: room.name, detail: `${room.capacity} мест` }))]} />
+      <Select label="Преподаватель" value={teacherId ?? ''} onChange={(value) => onTeacher(value || null)} options={teacherOptions} />
+      <Select label="Аудитория" value={roomId ?? ''} onChange={(value) => onRoom(value || null)} options={roomOptions} />
     </div>
   );
 }

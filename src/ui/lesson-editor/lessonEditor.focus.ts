@@ -1,6 +1,7 @@
 import type { EditorRequest } from '#interaction/types.ts';
 import type { RefObject } from 'react';
 
+import { matchesKey } from '#accessible/keyboard.bindings.ts';
 import { useSchedule } from '#app/schedule.store.ts';
 import { useEffect } from 'react';
 
@@ -24,7 +25,7 @@ export function useEditorFocus(dialog: RefObject<HTMLDivElement | null>, request
       (root?.querySelector<HTMLElement>('[role="combobox"]') ?? controls()[0])?.focus({ preventScroll: true });
     });
     function trap(event: KeyboardEvent): void {
-      if (event.key !== 'Tab') return;
+      if (matchesKey('switchArea', event.key) === null || matchesKey('switchArea', event.key) === undefined) return;
 
       const items = controls();
       const first = items[0];

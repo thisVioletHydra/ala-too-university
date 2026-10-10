@@ -105,3 +105,10 @@ export function sourceNode(hand: Hand): HTMLElement | null {
   const node = document.querySelector(selector);
   return node instanceof HTMLElement ? node : null;
 }
+
+/** Ширина первой клетки сетки: по ней выравнивается превью секции. */
+export function firstSlotWidth(): number | undefined {
+  const cell = document.querySelector('[data-slot]');
+
+  return cell instanceof HTMLElement ? insetBox(cell).width : undefined;
+}

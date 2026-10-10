@@ -1,5 +1,7 @@
 import type { Section } from '#schedule/types.ts';
 
+import { TEACHER_PLACEHOLDER } from '#ui/teacher-label.ts';
+
 export type Grouping = 'course' | 'teacher';
 export type SectionRow = {
   section: Section;
@@ -39,7 +41,7 @@ export function sectionRows(input: GroupInput): SectionRow[] {
     const last = !next || groupKey(next) !== key;
     const heading = input.groupBy === 'course'
       ? { title: input.courseName(section), detail: `Преподавателей: ${teacherCounts.get(section.courseId)?.size ?? 0}`, code: input.courseCode(section) }
-      : { title: input.teacherName(section) ?? 'Нужен преподаватель', detail: 'Дисциплины преподавателя', code: null };
+      : { title: input.teacherName(section) ?? TEACHER_PLACEHOLDER, detail: 'Дисциплины преподавателя', code: null };
     return { section, index, first, last, heading: first ? heading : null };
   });
 }

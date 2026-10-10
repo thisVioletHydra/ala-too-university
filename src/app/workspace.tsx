@@ -86,11 +86,13 @@ export function Workspace(props: WorkspaceProps) {
     return props.catalog.teachers.find((teacher) => teacher.id === id)?.shortName ?? null;
   }
 
-  const editorKey = board.editor?.mode === 'edit'
-    ? board.editor.lessonId
-    : board.editor?.mode === 'section' ? `section-${board.editor.sectionId}` : board.editor
-      ? `${board.editor.sectionId}-${board.editor.day}-${board.editor.timeSlotId}`
-      : 'closed';
+  let editorKey = 'closed';
+  const editor = board.editor;
+  if (editor?.mode === 'edit') editorKey = editor.lessonId;
+
+  if (editor?.mode === 'section') editorKey = `section-${editor.sectionId}`;
+
+  if (editor?.mode === 'create') editorKey = `${editor.sectionId}-${editor.day}-${editor.timeSlotId}`;
 
   const { required, placed, remaining } = scheduleProgress(props.catalog.sections, lessons);
   const carried = board.ghost ?? board.hold.hand;
@@ -100,6 +102,21 @@ export function Workspace(props: WorkspaceProps) {
   const sourceSlot = props.catalog.timeSlots.find((slot) => slot.id === sourceLesson?.timeSlotId);
   const destinationDay = props.catalog.weekDays.find((day) => board.overKey?.startsWith(`${day.id}|`));
   const destinationSlot = props.catalog.timeSlots.find((slot) => board.overKey?.endsWith(`|${slot.id}`));
+
+  function isSectionHighlighted(section: Section): boolean {
+    if (search.teacherId === null || search.teacherId === undefined) return false;
+
+    return sectionTeacher(section, lessons, remembered) === search.teacherId;
+  }
+
+  function enterSectionList(): void {
+    hand.enter('list');
+  }
+
+  function dropIntoSectionList(): void {
+    const held = board.hold.hand;
+    if (held) board.dropHand(held, { kind: 'unassign' });
+  }
 
   return (
     <div className="shell">
@@ -145,36 +162,34 @@ export function Workspace(props: WorkspaceProps) {
         <div className="sections-pane" inert={sectionsHidden}>
         <SectionList
           hidden={sectionsHidden}
-          sections={search.visible}
-          groupBy={search.groupBy}
-          onGroupBy={search.setGroupBy}
-          sectionTeacherId={search.sectionTeacherId}
-          onSectionTeacher={search.setSectionTeacherId}
-          teachers={props.catalog.teachers}
-          lessons={lessons}
-          courseName={courseName}
-          courseCode={courseCode}
-          teacherName={teacherName}
-          highlighted={(section) => {
-            const id = sectionTeacher(section, lessons, remembered);
-            if (search.teacherId === null || search.teacherId === undefined) return false;
-
-            return id === search.teacherId;
+          filters={{
+            groupBy: search.groupBy,
+            onGroupBy: search.setGroupBy,
+            sectionTeacherId: search.sectionTeacherId,
+            onSectionTeacher: search.setSectionTeacherId,
+            teachers: props.catalog.teachers,
+            mode: search.mode,
+            onMode: search.setMode,
+            query: search.query,
+            counts: search.counts,
+            onQuery: search.setQuery,
           }}
-          filtering={search.teacherId !== null}
-          mode={search.mode}
-          onMode={search.setMode}
-          query={search.query}
-          counts={search.counts}
-          onQuery={search.setQuery}
-          listIndex={hand.listIndex}
-          onEnter={() => hand.enter('list')}
-          onGrab={hand.grabSection}
-          onPoint={hand.pointList}
-          onLeave={hand.leaveList}
-          onDrop={() => {
-            const held = board.hold.hand;
-            if (held) board.dropHand(held, { kind: 'unassign' });
+          content={{
+            sections: search.visible,
+            lessons,
+            courseName,
+            courseCode,
+            teacherName,
+            highlighted: isSectionHighlighted,
+            filtering: search.teacherId !== null,
+          }}
+          navigation={{
+            listIndex: hand.listIndex,
+            onEnter: enterSectionList,
+            onGrab: hand.grabSection,
+            onPoint: hand.pointList,
+            onLeave: hand.leaveList,
+            onDrop: dropIntoSectionList,
           }}
         />
         </div>

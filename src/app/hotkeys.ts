@@ -1,4 +1,4 @@
-import { detectPlatform, globalCommand } from '#interaction/keyboard.ts';
+import { detectPlatform, globalCommand } from '#accessible/keyboard.bindings.ts';
 
 type Hotkeys = {
   undo: () => void

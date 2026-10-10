@@ -1,12 +1,12 @@
-import type { SlotAdvice } from '#schedule/conflicts.ts';
-import type { Lesson, WeekDay } from '#schedule/types.ts';
+import type { WeekDay } from '#schedule/types.ts';
 import type { ReactNode, RefObject } from 'react';
-import type { ActiveDrag, Hand } from '#interaction/types.ts';
 
 import { useDroppable } from '@dnd-kit/core';
 import { slotKey, useBoard } from '#app/providers.tsx';
 import { useSchedule } from '#app/schedule.store.ts';
-import { useLayoutEffect, useRef } from 'react';
+import { useRef } from 'react';
+import { useAnchoredOverlay } from './slotCell.position.ts';
+import { isHomeCell, reasonText } from './slotCell.model.ts';
 import { createPortal } from 'react-dom';
 
 import styles from '#ui/slot-cell/slot-cell.module.css';
@@ -30,7 +30,9 @@ export function SlotCell(props: SlotCellProps) {
   const advice = board.advice.get(key);
   const home = isHomeCell(board.repeat ? null : board.ghost, board.repeat ? null : board.hold.hand, lessons, props.day, props.timeSlotId);
   const over = !home && board.overKey === key;
-  const tone = home || !advice ? 'idle' : advice.ok ? 'ok' : 'bad';
+  let tone = 'idle';
+  if (!home && advice) tone = advice.ok ? 'ok' : 'bad';
+
   const drop = useDroppable({
     id: key,
     data: { kind: 'slot', day: props.day, timeSlotId: props.timeSlotId },
@@ -75,59 +77,19 @@ export function SlotCell(props: SlotCellProps) {
 function DropHint(props: { ok: boolean, remove: boolean, anchor: RefObject<HTMLDivElement | null> }) {
   const hint = useRef<HTMLSpanElement>(null);
 
-  useLayoutEffect(() => {
-    function place(): void {
-      const cell = props.anchor.current;
-      const label = hint.current;
-      if (!cell || !label) return;
+  useAnchoredOverlay({ anchor: props.anchor, overlay: hint, placement: 'center' });
+  let label = '× Недоступно';
+  if (props.ok) label = '✓ Поставить сюда';
 
-      const rect = cell.getBoundingClientRect();
-      label.style.left = `${rect.left + rect.width / 2}px`;
-      label.style.top = `${rect.top + rect.height / 2}px`;
-      label.style.maxWidth = `${Math.max(0, rect.width - 16)}px`;
-    }
+  if (props.remove) label = '− Убрать';
 
-    place();
-    window.addEventListener('scroll', place, true);
-    window.addEventListener('resize', place);
-    return () => {
-      window.removeEventListener('scroll', place, true);
-      window.removeEventListener('resize', place);
-    };
-  }, [props.anchor]);
-
-  return createPortal(<span ref={hint} className={styles.dropLabel} data-ok={props.ok ? 'yes' : 'no'} data-remove={props.remove ? 'yes' : 'no'}>{props.remove ? '− Убрать' : props.ok ? '✓ Поставить сюда' : '× Недоступно'}</span>, document.body);
+  return createPortal(<span ref={hint} className={styles.dropLabel} data-ok={props.ok ? 'yes' : 'no'} data-remove={props.remove ? 'yes' : 'no'}>{label}</span>, document.body);
 }
 
 function ConflictTip(props: { text: string, anchor: RefObject<HTMLDivElement | null> }) {
   const tip = useRef<HTMLParagraphElement>(null);
 
-  useLayoutEffect(() => {
-    const node = tip.current;
-    if (!node || !props.anchor.current) return;
-
-    function place() {
-      const el = tip.current;
-      const box = props.anchor.current;
-      if (!el || !box) return;
-
-      const rect = box.getBoundingClientRect();
-      const width = el.offsetWidth;
-      const left = Math.max(8, Math.min(rect.left, window.innerWidth - width - 8));
-      el.style.insetBlockStart = `${rect.bottom + 4}px`;
-      el.style.insetInlineStart = `${left}px`;
-      el.style.visibility = 'visible';
-    }
-
-    place();
-    window.addEventListener('scroll', place, true);
-    window.addEventListener('resize', place);
-
-    return () => {
-      window.removeEventListener('scroll', place, true);
-      window.removeEventListener('resize', place);
-    };
-  }, [props.anchor, props.text]);
+  useAnchoredOverlay({ anchor: props.anchor, overlay: tip, placement: 'below', text: props.text });
 
   return createPortal(
     <p ref={tip} className={styles.tip}>
@@ -136,34 +98,4 @@ function ConflictTip(props: { text: string, anchor: RefObject<HTMLDivElement | n
     </p>,
     document.body,
   );
-}
-
-function isHomeCell(
-  ghost: ActiveDrag | null,
-  hand: Hand | null,
-  lessons: Lesson[],
-  day: WeekDay,
-  timeSlotId: string,
-): boolean {
-  const carried = ghost?.kind === 'lesson' && !ghost.copy
-    ? ghost.lessonId
-    : hand?.kind === 'lesson'
-      ? hand.lessonId
-      : hand?.kind === 'section' ? hand.originLessonId ?? null : null;
-  if (carried === null || carried === undefined) return false;
-
-  const lesson = lessons.find((item) => item.id === carried);
-
-  return lesson?.day === day && lesson.timeSlotId === timeSlotId;
-}
-
-function reasonText(advice: SlotAdvice | undefined, names: Record<string, string>): string | null {
-  if (!advice || advice.ok || !advice.text) return null;
-
-  if (advice.text === 'Преподаватель занят' && advice.teacherId) {
-    const name = names[advice.teacherId];
-    if (name) return `${name} занят в этом слоте`;
-  }
-
-  return advice.text;
 }
