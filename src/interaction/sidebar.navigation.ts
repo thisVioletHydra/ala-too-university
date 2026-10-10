@@ -1,4 +1,4 @@
-import { keyboard, matchesKey } from '#accessible/keyboard.bindings.ts';
+import { matchesKey } from '#accessible/keyboard.bindings.ts';
 
 export type SidebarTarget =
   | { kind: 'search' }
@@ -26,18 +26,17 @@ type SidebarInput = {
 export function sidebarDestination(input: SidebarInput): SidebarDestination {
   const { target, key } = input;
   if (target.kind === 'search') {
-    const directions: Record<string, SidebarDestination> = {
-      [keyboard.previous[0]]: { kind: 'status', index: input.selectedStatus },
-      [keyboard.next[0]]: input.cardCount > 0 ? { kind: 'card', index: 0 } : { kind: 'unhandled' },
-    };
+    if (matchesKey('previous', key)) return { kind: 'status', index: input.selectedStatus };
 
-    return directions[key] ?? { kind: 'unhandled' };
+    if (matchesKey('next', key) && input.cardCount > 0) return { kind: 'card', index: 0 };
+
+    return { kind: 'unhandled' };
   }
 
   if (target.kind === 'status') {
     if (matchesKey('next', key)) return { kind: 'search' };
 
-    const direction = horizontalDirection[key] ?? 0;
+    const direction = navigationDirection(key, 'horizontal');
 
     return direction ? { kind: 'status', index: bounded(target.index + direction, input.statusCount) } : { kind: 'stay' };
   }
@@ -47,7 +46,7 @@ export function sidebarDestination(input: SidebarInput): SidebarDestination {
       return input.cardCount > 0 ? { kind: 'card', index: input.cardCount - 1 } : { kind: 'search' };
     }
 
-    const direction = verticalDirection[key] ?? 0;
+    const direction = navigationDirection(key, 'vertical');
 
     return direction ? { kind: 'issue', index: bounded(target.index + direction, input.issueCount) } : { kind: 'stay' };
   }
@@ -55,8 +54,14 @@ export function sidebarDestination(input: SidebarInput): SidebarDestination {
   return { kind: 'unhandled' };
 }
 
-const horizontalDirection: Record<string, number> = { [keyboard.left[0]]: -1, [keyboard.right[0]]: 1 };
-const verticalDirection: Record<string, number> = { [keyboard.previous[0]]: -1, [keyboard.next[0]]: 1 };
+function navigationDirection(key: string, axis: 'horizontal' | 'vertical'): number {
+  const backward = axis === 'horizontal' ? 'left' : 'previous';
+  const forward = axis === 'horizontal' ? 'right' : 'next';
+  if (matchesKey(backward, key)) return -1;
+
+  return matchesKey(forward, key) ? 1 : 0;
+}
+
 function bounded(index: number, count: number): number {
   return Math.max(0, Math.min(count - 1, index));
 }

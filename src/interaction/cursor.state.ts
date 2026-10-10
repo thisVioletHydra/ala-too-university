@@ -16,13 +16,13 @@ type CursorContext = {
   token: number;
 };
 
-// Priority is explicit: editor > held card > landing animation > idle.
+// Редактор приостанавливает перенос, удерживаемая карточка важнее посадки.
 export function resolveCursorState(context: CursorContext): CursorState {
   if (context.editing) return { phase: 'paused' };
 
   if (context.carrying) return { phase: 'holding', input: context.input };
 
-  if (context.landing === null || context.landing === undefined) return { phase: 'idle' };
+  if (context.landing === null) return { phase: 'idle' };
 
   return context.landing.kind === 'tray'
     ? { phase: 'returning', token: context.token }

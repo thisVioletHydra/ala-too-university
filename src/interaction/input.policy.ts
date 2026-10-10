@@ -9,11 +9,13 @@ export type PointerSample = {
   movementY: number;
 };
 
+const POINTER_TAKEOVER_DISTANCE = 6;
+
 export function acceptsPointer(input: InputMethod, sample: PointerSample): boolean {
   const hasPosition = sample.x !== 0 || sample.y !== 0;
   const incidentalMovement = sample.eventType === 'pointermove'
     && input === 'keyboard'
-    && Math.hypot(sample.movementX, sample.movementY) < 6;
+    && Math.hypot(sample.movementX, sample.movementY) < POINTER_TAKEOVER_DISTANCE;
   return sample.primary && hasPosition && !incidentalMovement;
 }
 

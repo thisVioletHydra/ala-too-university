@@ -26,10 +26,16 @@ export function decideDrop(input: DropInput): DropDecision {
   if (sameSlot && !copyMode) return { kind: 'cancel' };
 
   const sectionId = hand.kind === 'section' ? hand.sectionId : origin?.sectionId;
-  if (sectionId === null || sectionId === undefined) return { kind: 'missing-source' };
+  if (sectionId === undefined) return { kind: 'missing-source' };
 
-  const matching = lessons.find((lesson) => lesson.sectionId === sectionId && lesson.day === target.day && lesson.timeSlotId === target.timeSlotId);
-  if (copyMode && matching) return { kind: 'remove', lessonId: matching.id };
+  if (copyMode) {
+    const matching = lessons.find((lesson) => (
+      lesson.sectionId === sectionId
+      && lesson.day === target.day
+      && lesson.timeSlotId === target.timeSlotId
+    ));
+    if (matching) return { kind: 'remove', lessonId: matching.id };
+  }
 
   if (hand.kind === 'section') return { kind: 'assign', sectionId };
 

@@ -1,6 +1,6 @@
 import type { Hand } from '#interaction/types.ts';
 
-import { groupCommand, groupView } from '#interaction/group-policy.ts';
+import { groupCommand, groupView } from '#interaction/group.policy.ts';
 import { describe, expect, it } from 'vitest';
 
 const pair = ['L1', 'L2'];

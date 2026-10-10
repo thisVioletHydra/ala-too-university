@@ -7,14 +7,10 @@ export type PickerReturnEvent =
   | { kind: 'action' }
   | { kind: 'release' };
 
-export function pickerReturnAfter(_state: PickerReturn, event: PickerReturnEvent): PickerReturn {
-  switch (event.kind) {
-    case 'grab':
-      return { kind: 'eligible', lessonId: event.lessonId };
-    case 'action':
-    case 'release':
-      return { kind: 'none' };
-  }
+export function pickerReturnAfter(event: PickerReturnEvent): PickerReturn {
+  if (event.kind === 'grab') return { kind: 'eligible', lessonId: event.lessonId };
+
+  return { kind: 'none' };
 }
 
 export function pickerReturnLesson(state: PickerReturn, lessonIds: string[]): string | null {

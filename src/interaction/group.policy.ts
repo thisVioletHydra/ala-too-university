@@ -1,6 +1,6 @@
 import type { Hand } from './types.ts';
 
-import { matchesKey } from '#accessible/keyboard.bindings.ts';
+import { matchesAnyKey, matchesKey } from '#accessible/keyboard.bindings.ts';
 
 export type GroupView = 'single' | 'pair' | 'strips';
 export type GroupCommand = 'ignore' | 'open-picker' | 'focus-first' | 'reorder-up' | 'reorder-down' | 'confirm-order';
@@ -24,17 +24,18 @@ export function groupCommand(context: GroupContext): GroupCommand {
   const view = groupView(context.lessonIds.length);
   if (context.dragging || view === 'single') return 'ignore';
 
-  if (context.hand === null || context.hand === undefined) {
-    const opens = matchesKey('edit', context.key) || matchesKey('place', context.key);
+  if (context.hand === null) {
+    const opens = matchesAnyKey(['edit', 'place'], context.key);
     if (!context.cellTarget || !opens) return 'ignore';
 
     return view === 'strips' ? 'open-picker' : 'focus-first';
   }
 
-  const movingPair = view === 'pair' && context.hand.kind === 'lesson' && !context.copyMode;
-  if (movingPair === false) return 'ignore';
+  const { hand, lessonIds } = context;
+  if (hand.kind !== 'lesson') return 'ignore';
 
-  if (context.hand.kind !== 'lesson' || !context.lessonIds.includes(context.hand.lessonId)) return 'ignore';
+  const canReorder = view === 'pair' && !context.copyMode && lessonIds.includes(hand.lessonId);
+  if (!canReorder) return 'ignore';
 
   if (matchesKey('previous', context.key)) return 'reorder-up';
 
