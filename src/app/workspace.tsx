@@ -45,7 +45,7 @@ export function Workspace({ catalog, dataset, onDataset }: WorkspaceProps) {
     <div className="shell">
       <header className="top">
         <div>
-          <h1><img className="app-logo" src="/logo.svg" alt="" />Расписание на неделю</h1>
+          <h1><img className="app-logo" src={`${import.meta.env.BASE_URL}logo.svg`} alt="" />Расписание на неделю</h1>
           <p className="hint">Занятия, преподаватели и аудитории — в одной сетке</p>
         </div>
         <div id="keyboard-hints-slot" className="keyboard-hints-slot" />
