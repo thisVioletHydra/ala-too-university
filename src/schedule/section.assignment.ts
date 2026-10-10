@@ -1,7 +1,7 @@
 import type { ConflictResult, Lesson, ScheduleCatalog, Section } from './types.ts';
 
 import { placementConflict } from './conflicts.ts';
-import { sectionTeacher } from './section-teacher.ts';
+import { sectionTeacher } from './section.teacher.ts';
 
 type AssignmentInput = {
   catalog: ScheduleCatalog;
@@ -11,17 +11,18 @@ type AssignmentInput = {
   teacherId?: string;
 };
 
-// Validate the complete proposed schedule before the store commits any changes.
+// Проверяем предложенное расписание целиком до сохранения изменений.
 export function sectionAssignmentConflict(input: AssignmentInput): ConflictResult {
   const { catalog, lessons, sectionId, rememberedTeachers } = input;
   const section = catalog.sections.find((item) => item.id === sectionId);
-  if (section === null || section === undefined)
+  if (section === undefined)
     return {
       ok: false,
       kind: 'section-busy',
       text: 'Секция не найдена'
     };
 
+  const courseId = section.courseId;
   const teacherId = input.teacherId ?? sectionTeacher(section, lessons, rememberedTeachers);
   const teacherAllowed = !teacherId || section.allowedTeacherIds.includes(teacherId);
   if (teacherAllowed === false)
@@ -33,7 +34,7 @@ export function sectionAssignmentConflict(input: AssignmentInput): ConflictResul
 
   function alreadyAssigned(other: Section): boolean {
     const anotherSection = other.id !== sectionId;
-    const sameCourse = other.courseId === (section&& section.courseId);
+    const sameCourse = other.courseId === courseId;
     const sameTeacher = sectionTeacher(other, lessons, rememberedTeachers) === teacherId;
     return anotherSection && sameCourse && sameTeacher;
   }

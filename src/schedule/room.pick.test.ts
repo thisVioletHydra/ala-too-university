@@ -1,7 +1,7 @@
 import type { Lesson, Section } from '#schedule/types.ts';
 
 import { parseSchedule } from '#data/schedule.parser.ts';
-import { pickRoom } from '#schedule/pick-room.ts';
+import { pickRoom } from '#schedule/room.pick.ts';
 import { describe, expect, it } from 'vitest';
 
 import rawSchedule from '#data/schedule-mock-data.json';

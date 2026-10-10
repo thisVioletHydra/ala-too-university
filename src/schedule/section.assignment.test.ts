@@ -1,6 +1,6 @@
 import type { Lesson, Room, Section } from '#schedule/types.ts';
 
-import { sectionAssignmentConflict } from '#schedule/section-assignment.ts';
+import { sectionAssignmentConflict } from '#schedule/section.assignment.ts';
 import { describe, expect, it } from 'vitest';
 
 function section(patch: Partial<Section> = {}): Section {

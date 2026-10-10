@@ -1,6 +1,6 @@
 import type { Lesson, Section } from '#schedule/types.ts';
 
-import { sectionProgress } from '#schedule/section-progress.ts';
+import { sectionProgress } from '#schedule/section.progress.ts';
 import { describe, expect, it } from 'vitest';
 
 const section: Section = {

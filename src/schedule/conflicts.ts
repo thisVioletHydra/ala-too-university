@@ -3,14 +3,13 @@ import type {
   Lesson,
   Placement,
   Room,
-  ScheduleCatalog,
   Section,
   TeacherBlockedSlot,
   WeekDay,
 } from '#schedule/types.ts';
 
-import { busySlots, slotKey } from '#schedule/busy-slots.ts';
-import { pickRoom } from '#schedule/pick-room.ts';
+import { busySlots, slotKey } from '#schedule/slots.busy.ts';
+import { pickRoom } from '#schedule/room.pick.ts';
 
 export type ConflictInput = {
   placement: Placement
@@ -45,12 +44,12 @@ export type ExplainInput = {
 export function placementConflict(input: ConflictInput): ConflictResult {
   const { placement, lessons, sections, rooms, blockedSlots, excludeLessonId } = input;
   const section = sections.find((item) => item.id === placement.sectionId);
-  if (section === null || section === undefined) {
+  if (section === undefined) {
     return { ok: false, kind: 'section-busy', text: 'Секция не найдена' };
   }
 
   const room = rooms.find((item) => item.id === placement.roomId);
-  if (room === null || room === undefined) {
+  if (room === undefined) {
     return { ok: false, kind: 'no-room', text: 'Аудитория не найдена' };
   }
 
@@ -152,32 +151,6 @@ export function explainSlot(input: ExplainInput): SlotAdvice {
         needsChoice: false,
       };
     }
-
-    const room = pickRoom({
-      section: input.section,
-      day: input.day,
-      timeSlotId: input.timeSlotId,
-      rooms: input.rooms,
-      lessons: input.lessons,
-      excludeLessonId: input.excludeLessonId,
-    });
-    if (room === null || room === undefined) {
-      return {
-        ok: false,
-        text: noRoomText(input.section, input.rooms),
-        teacherId: input.teacherId,
-        roomId: null,
-        needsChoice: true,
-      };
-    }
-
-    return {
-      ok: true,
-      text: null,
-      teacherId: input.teacherId,
-      roomId: room.id,
-      needsChoice: false,
-    };
   }
 
   const room = pickRoom({
@@ -188,39 +161,22 @@ export function explainSlot(input: ExplainInput): SlotAdvice {
     lessons: input.lessons,
     excludeLessonId: input.excludeLessonId,
   });
-  if (input.teacherId === '') {
-    return { ok: Boolean(room), text: room ? null : noRoomText(input.section, input.rooms), teacherId: '', roomId: room?.id ?? null, needsChoice: !room };
-  }
-
-  if (room === null || room === undefined) {
+  if (room === null) {
     return {
       ok: false,
       text: noRoomText(input.section, input.rooms),
-      teacherId: null,
+      teacherId: input.teacherId,
       roomId: null,
       needsChoice: true,
     };
   }
 
-
   return {
     ok: true,
     text: null,
-    teacherId: null,
+    teacherId: input.teacherId,
     roomId: room.id,
-    needsChoice: true,
-  };
-}
-
-export function catalogSlices(catalog: ScheduleCatalog): {
-  sections: Section[]
-  rooms: Room[]
-  blockedSlots: TeacherBlockedSlot[]
-} {
-  return {
-    sections: catalog.sections,
-    rooms: catalog.rooms,
-    blockedSlots: catalog.blockedSlots,
+    needsChoice: input.teacherId === null,
   };
 }
 
