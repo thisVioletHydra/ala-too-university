@@ -1,7 +1,7 @@
 import type { Hand, ActiveDrag } from '#interaction/types.ts';
 import type { LessonCardProps } from '#ui/lesson-card/lesson-card.tsx';
 
-import { groupView } from '#interaction/group-policy.ts';
+import { groupView } from '#interaction/group.policy.ts';
 
 export type SlotLessonsView = {
   multiple: boolean

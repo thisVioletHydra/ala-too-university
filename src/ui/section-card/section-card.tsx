@@ -1,10 +1,10 @@
 import type { Lesson, Section } from '#schedule/types.ts';
-import type { ProgressState } from '#schedule/section-progress.ts';
+import type { ProgressState } from '#schedule/section.progress.ts';
 
 import { TEACHER_PLACEHOLDER } from '#ui/teacher-label.ts';
 import { useDraggable } from '@dnd-kit/core';
 import { useBoard } from '#app/providers.tsx';
-import { sectionProgress } from '#schedule/section-progress.ts';
+import { sectionProgress } from '#schedule/section.progress.ts';
 import { plural } from '#ui/plural.ts';
 import { sectionNumber } from '#ui/section-code.ts';
 import { dataAttribute } from '#ui/data-attribute.ts';

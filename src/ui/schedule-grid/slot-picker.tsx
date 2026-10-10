@@ -1,9 +1,9 @@
-import type { PickerReturn } from '#interaction/picker-return.ts';
+import type { PickerReturn } from '#interaction/picker.return.ts';
 import type { LessonCardProps } from '#ui/lesson-card/lesson-card.tsx';
 import type { RefObject } from 'react';
 
 import { keyboardHints, matchesKey } from '#accessible/keyboard.bindings.ts';
-import { pickerReturnAfter } from '#interaction/picker-return.ts';
+import { pickerReturnAfter } from '#interaction/picker.return.ts';
 import { useBoard } from '#app/providers.tsx';
 import { LessonCard } from '#ui/lesson-card/lesson-card.tsx';
 import { createPortal } from 'react-dom';
@@ -45,7 +45,7 @@ export function SlotPicker({ label, items, dialog: dialogRef, selected: selected
         selectedRef.current = item.lessonId;
         board.setEditor({ mode: 'edit', lessonId: item.lessonId });
       } else {
-        returnToPickerRef.current = pickerReturnAfter(returnToPickerRef.current, { kind: 'grab', lessonId: item.lessonId });
+        returnToPickerRef.current = pickerReturnAfter({ kind: 'grab', lessonId: item.lessonId });
         onClose(false);
         item.onGrab();
       }
@@ -78,7 +78,7 @@ export function SlotPicker({ label, items, dialog: dialogRef, selected: selected
     </header>
     <div className={styles.pickerList}>{items.map((item) => <LessonCard key={item.lessonId} {...item}
       listView
-      onGrab={() => { returnToPickerRef.current = pickerReturnAfter(returnToPickerRef.current, { kind: 'grab', lessonId: item.lessonId });
+      onGrab={() => { returnToPickerRef.current = pickerReturnAfter({ kind: 'grab', lessonId: item.lessonId });
         onClose(false);
         item.onGrab();
       }} />)}</div>

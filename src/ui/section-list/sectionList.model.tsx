@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import type { Grouping } from '#features/section-groups.ts';
+import type { Grouping } from '#features/section.groups.ts';
 import type { ListMode } from '#features/use-search.ts';
 import type { Teacher } from '#schedule/types.ts';
 

@@ -1,8 +1,8 @@
 import type { EditorRequest } from '#interaction/types.ts';
 import type { Lesson, ScheduleCatalog, TimeSlot, WeekDay } from '#schedule/types.ts';
 
-import { sectionTeacher } from '#schedule/section-teacher.ts';
-import { pickRoom } from '#schedule/pick-room.ts';
+import { sectionTeacher } from '#schedule/section.teacher.ts';
+import { pickRoom } from '#schedule/room.pick.ts';
 import { useSchedule } from '#app/schedule.store.ts';
 
 const DAY_LABELS: Record<WeekDay, string> = {

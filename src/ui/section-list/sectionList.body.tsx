@@ -1,6 +1,6 @@
 import type { SectionListProps } from './section-list.tsx';
 
-import { sectionRows } from '#features/section-groups.ts';
+import { sectionRows } from '#features/section.groups.ts';
 import { SectionCard } from '#ui/section-card/section-card.tsx';
 import { dataAttribute } from '#ui/data-attribute.ts';
 import { dropHintText, emptyHint, emptyTitle, listAimActive, listTabIndex } from '#ui/section-list/sectionList.model.tsx';

@@ -1,7 +1,7 @@
 import type { EditorDraft } from '#ui/lesson-editor/lessonEditor.draft.ts';
 import type { Flash } from '#interaction/types.ts';
 
-import { editLesson, placeFromEditor } from '#features/edit-lesson.ts';
+import { placeFromEditor } from '#features/lesson.save.ts';
 import { useSchedule } from '#app/schedule.store.ts';
 
 /** Удаление занятия: убрать из расписания, но не из секции. */
@@ -37,7 +37,7 @@ export function saveEditor(input: SaveInput): SaveOutcome {
 
   const before = new Set(useSchedule.getState().lessons.map((item) => item.id));
   const saved = draft.lessonId
-    ? editLesson({ lessonId: draft.lessonId, teacherId, roomId })
+    ? useSchedule.getState().editLesson({ lessonId: draft.lessonId, teacherId, roomId })
     : placeFromEditor({ sectionId: draft.sectionId, teacherId, roomId, day: draft.day, timeSlotId: draft.timeSlotId });
   if (saved.ok === false) return { kind: 'rejected', text: saved.text };
 

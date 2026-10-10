@@ -1,9 +1,9 @@
-import type { PickerReturn } from '#interaction/picker-return.ts';
+import type { PickerReturn } from '#interaction/picker.return.ts';
 import type { LessonCardProps } from '#ui/lesson-card/lesson-card.tsx';
 import type { RefObject } from 'react';
 
-import { pickerReturnAfter, pickerReturnLesson } from '#interaction/picker-return.ts';
-import { pickerState } from '#interaction/group-policy.ts';
+import { pickerReturnAfter, pickerReturnLesson } from '#interaction/picker.return.ts';
+import { pickerState } from '#interaction/group.policy.ts';
 import { lessonNode, LESSON_SELECTOR, PICKER_CLOSE_SELECTOR, slotOf } from '#ui/schedule-grid/slotLessons.selectors.ts';
 import { subscribeCancelHand } from '#ui/hand-events.ts';
 import { matchesKey } from '#accessible/keyboard.bindings.ts';
@@ -51,7 +51,7 @@ export function useSlotPicker({ items, root }: SlotPickerInput): SlotPickerState
       const lessonId = pickerReturnLesson(returnToPicker.current, items.map((item) => item.lessonId));
       if (lessonId === null || lessonId === undefined) return;
 
-      returnToPicker.current = pickerReturnAfter(returnToPicker.current, { kind: 'release' });
+      returnToPicker.current = pickerReturnAfter({ kind: 'release' });
       selected.current = lessonId;
       setOpen(true);
     }
@@ -60,7 +60,7 @@ export function useSlotPicker({ items, root }: SlotPickerInput): SlotPickerState
   }, [items]);
 
   useEffect(() => {
-    if (!board.hold.hand && !board.ghost) returnToPicker.current = pickerReturnAfter(returnToPicker.current, { kind: 'release' });
+    if (!board.hold.hand && !board.ghost) returnToPicker.current = pickerReturnAfter({ kind: 'release' });
   }, [board.hold.hand, board.ghost]);
 
   useEffect(() => {
@@ -68,7 +68,7 @@ export function useSlotPicker({ items, root }: SlotPickerInput): SlotPickerState
       if (returnToPicker.current.kind === 'none') return;
 
       const changesIntent = matchesKey('copyMode', event.key) || matchesKey('place', event.key);
-      if (changesIntent) returnToPicker.current = pickerReturnAfter(returnToPicker.current, { kind: 'action' });
+      if (changesIntent) returnToPicker.current = pickerReturnAfter({ kind: 'action' });
     }
 
     window.addEventListener('keydown', markAction, true);

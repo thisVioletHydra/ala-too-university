@@ -1,12 +1,12 @@
-import type { CursorState } from '#interaction/cursor-state.ts';
+import type { CursorState } from '#interaction/cursor.state.ts';
 import type { ScheduleCatalog } from '#schedule/types.ts';
 import type { ReactNode, RefObject } from 'react';
 
-import { acceptsPointer } from '#interaction/input-policy.ts';
+import { acceptsPointer } from '#interaction/input.policy.ts';
 import { isInteractionKey } from '#accessible/keyboard.bindings.ts';
 import { cannotFly, firstSlotWidth, heldDrag, landingBox, placeAim, placeAt, sourceNode } from '#ui/drag-ghost/dragGhost.geometry.ts';
 import { heldCard } from '#ui/drag-ghost/dragGhost.heldCard.tsx';
-import { resolveCursorState, ownsAnimation } from '#interaction/cursor-state.ts';
+import { resolveCursorState, ownsAnimation } from '#interaction/cursor.state.ts';
 import { setCardInput, setHandActive } from '#ui/drag-ghost/dragGhost.bodyFlags.ts';
 import { useBoard } from '#app/providers.tsx';
 import { useSchedule } from '#app/schedule.store.ts';
@@ -99,7 +99,7 @@ export function useHandCursor(catalog: ScheduleCatalog): HandCursorState {
     });
     animation.onfinish = () => {
       const state = cursor.current;
-      if (ownsAnimation(state, token) === null || ownsAnimation(state, token) === undefined) return;
+      if (ownsAnimation(state, token) === false) return;
 
       flushSync(() => complete());
     };

@@ -1,7 +1,7 @@
 import type { LessonCardProps } from '#ui/lesson-card/lesson-card.tsx';
 import type { Dispatch, RefObject, SetStateAction } from 'react';
 
-import { groupCommand } from '#interaction/group-policy.ts';
+import { groupCommand } from '#interaction/group.policy.ts';
 import { lessonNode, slotOf } from '#ui/schedule-grid/slotLessons.selectors.ts';
 import { matchesAnyKey, matchesKey } from '#accessible/keyboard.bindings.ts';
 import { useBoard } from '#app/providers.tsx';

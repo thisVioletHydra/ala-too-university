@@ -1,4 +1,4 @@
-import type { Grouping } from '#features/section-groups.ts';
+import type { Grouping } from '#features/section.groups.ts';
 import type { ListMode } from '#features/use-search.ts';
 import type { Lesson, Section, Teacher } from '#schedule/types.ts';
 
