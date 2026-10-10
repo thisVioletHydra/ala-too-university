@@ -3,7 +3,8 @@ import type { HandInput, HandStep, Zone } from '#features/hand.types.ts';
 import { firstAvailableSlot, isOriginalSlot } from '#features/hand.targets.ts';
 import { handleHandKey } from '#features/hand.keyboard.ts';
 import { slotKey, useBoard } from '#app/providers.tsx';
-import { useAimFocus } from '#features/hand.focus.ts';
+import { isPointerIntent } from '#accessible/input.method.ts';
+import { useAimFocus } from '#accessible/focus.aim.ts';
 import { useEffect, useEffectEvent, useLayoutEffect, useRef, useState } from 'react';
 
 export function useHand(input: HandInput) {
@@ -69,9 +70,7 @@ export function useHand(input: HandInput) {
 
   useEffect(() => {
     function onPointer(event: PointerEvent): void {
-      if (!keyboardRef.current || !event.isPrimary) return;
-
-      if (event.type === 'pointermove' && event.movementX === 0 && event.movementY === 0) return;
+      if (!keyboardRef.current || isPointerIntent(event) === false) return;
 
       keyboardRef.current = false;
     }

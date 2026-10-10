@@ -1,6 +1,7 @@
 import type { Dataset } from '#app/schedule.store.ts';
 
-import { keyboardHints, matchesAnyKey } from '#accessible/keyboard.bindings.ts';
+import { keyboardHints } from '#accessible/keyboard.bindings.ts';
+import { useKeyboardHints } from '#accessible/input.hints.ts';
 import { useBoard } from '#app/providers.tsx';
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
@@ -8,7 +9,7 @@ import { createPortal } from 'react-dom';
 export function WorkspaceSettings(props: { dataset: Dataset; onDataset: (dataset: Dataset) => void }) {
   const board = useBoard();
   const [hints, setHints] = useState(() => localStorage.getItem('schedule-keyboard-hints') !== 'off');
-  const [keyboard, setKeyboard] = useState(false);
+  const keyboard = useKeyboardHints();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
 
@@ -22,31 +23,6 @@ export function WorkspaceSettings(props: { dataset: Dataset; onDataset: (dataset
     return () => {
       document.removeEventListener('toggle', syncPicker, true);
       document.removeEventListener('focusin', syncPicker);
-    };
-  }, []);
-
-  useEffect(() => {
-    let hideTimer: ReturnType<typeof setTimeout> | undefined;
-    function onKey(event: KeyboardEvent): void {
-      if (matchesAnyKey(['switchArea', 'navigation', 'edit', 'place', 'cancel'], event.key)) {
-        clearTimeout(hideTimer);
-        setKeyboard(true);
-      }
-    }
-
-    function onPointer(): void {
-      clearTimeout(hideTimer);
-      hideTimer = setTimeout(() => setKeyboard(false), 800);
-    }
-
-    window.addEventListener('keydown', onKey, true);
-    window.addEventListener('pointerdown', onPointer);
-    window.addEventListener('pointermove', onPointer);
-    return () => {
-      clearTimeout(hideTimer);
-      window.removeEventListener('keydown', onKey, true);
-      window.removeEventListener('pointerdown', onPointer);
-      window.removeEventListener('pointermove', onPointer);
     };
   }, []);
 

@@ -1,4 +1,3 @@
-import type { SlotAdvice } from '#schedule/conflicts.ts';
 import type { Lesson, WeekDay } from '#schedule/types.ts';
 import type { ActiveDrag, Hand } from '#interaction/types.ts';
 
@@ -21,15 +20,4 @@ export function isHomeCell(
   const lesson = lessons.find((item) => item.id === carried);
 
   return lesson?.day === day && lesson.timeSlotId === timeSlotId;
-}
-
-export function reasonText(advice: SlotAdvice | undefined, names: Record<string, string>): string | null {
-  if (!advice || advice.ok || !advice.text) return null;
-
-  if (advice.text === 'Преподаватель занят' && advice.teacherId) {
-    const name = names[advice.teacherId];
-    if (name) return `${name} занят в этом слоте`;
-  }
-
-  return advice.text;
 }

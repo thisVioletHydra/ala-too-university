@@ -111,7 +111,7 @@ export function LessonEditor({ catalog, request, onClose }: LessonEditorProps) {
     const after = request.mode === 'create' ? ` · После сохранения: ${total}` : '';
     const note = reason ?? draft.text ?? `В расписании: ${assigned} из ${view.section.requiredLessonsPerWeek} занятий${after}`;
 
-    return <p className={styles.note} data-tone={reason ? 'bad' : 'calm'}>{note}</p>;
+    return <p className={styles.note} role="status" aria-atomic="true" data-tone={reason ? 'bad' : 'calm'}>{note}</p>;
   }
 
   function renderExcess(): ReactNode {

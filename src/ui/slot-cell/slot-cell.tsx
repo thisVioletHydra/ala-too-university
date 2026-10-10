@@ -1,13 +1,10 @@
 import type { WeekDay } from '#schedule/types.ts';
-import type { ReactNode, RefObject } from 'react';
+import type { ReactNode } from 'react';
 
 import { useDroppable } from '@dnd-kit/core';
 import { slotKey, useBoard } from '#app/providers.tsx';
 import { useSchedule } from '#app/schedule.store.ts';
-import { useRef } from 'react';
-import { useAnchoredOverlay } from './slotCell.position.ts';
-import { isHomeCell, reasonText } from './slotCell.model.ts';
-import { createPortal } from 'react-dom';
+import { isHomeCell } from './slotCell.model.ts';
 
 import styles from '#ui/slot-cell/slot-cell.module.css';
 
@@ -37,15 +34,9 @@ export function SlotCell(props: SlotCellProps) {
     id: key,
     data: { kind: 'slot', day: props.day, timeSlotId: props.timeSlotId },
   });
-  const anchor = useRef<HTMLDivElement | null>(null);
-  const tip = over ? reasonText(advice, board.teacherNames) : null;
-
   return (
     <div
-      ref={(element) => {
-        anchor.current = element;
-        drop.setNodeRef(element);
-      }}
+      ref={(element) => drop.setNodeRef(element)}
       className={styles.cell}
       aria-label={props.label}
       data-tone={board.advice.size > 0 ? tone : 'idle'}
@@ -67,35 +58,7 @@ export function SlotCell(props: SlotCellProps) {
       onClick={props.onDrop}
     >
       {props.children}
-      {over && advice ? <DropHint ok={advice.ok} remove={advice.text === 'Убрать'} anchor={anchor} /> : null}
       {props.unavailable && board.advice.size === 0 ? <span className={styles.unavailable}>Преподаватель недоступен</span> : null}
-      {tip ? <ConflictTip text={tip} anchor={anchor} /> : null}
     </div>
-  );
-}
-
-function DropHint(props: { ok: boolean, remove: boolean, anchor: RefObject<HTMLDivElement | null> }) {
-  const hint = useRef<HTMLSpanElement>(null);
-
-  useAnchoredOverlay({ anchor: props.anchor, overlay: hint, placement: 'center' });
-  let label = '× Недоступно';
-  if (props.ok) label = '✓ Поставить сюда';
-
-  if (props.remove) label = '− Убрать';
-
-  return createPortal(<span ref={hint} className={styles.dropLabel} data-ok={props.ok ? 'yes' : 'no'} data-remove={props.remove ? 'yes' : 'no'}>{label}</span>, document.body);
-}
-
-function ConflictTip(props: { text: string, anchor: RefObject<HTMLDivElement | null> }) {
-  const tip = useRef<HTMLParagraphElement>(null);
-
-  useAnchoredOverlay({ anchor: props.anchor, overlay: tip, placement: 'below', text: props.text });
-
-  return createPortal(
-    <p ref={tip} className={styles.tip}>
-      <span className={styles.bang} aria-hidden="true">!</span>
-      <span className={styles.tipText}>{props.text}</span>
-    </p>,
-    document.body,
   );
 }

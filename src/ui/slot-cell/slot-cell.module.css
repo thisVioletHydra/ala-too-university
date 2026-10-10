@@ -5,8 +5,8 @@
   gap: 4px;
   min-block-size: 6.6rem;
   padding: 0.4rem;
-  border-block-end: 1px solid var(--line);
-  border-inline-end: 1px solid var(--line);
+  border-block-end: 1px solid var(--grid-line);
+  border-inline-end: 1px solid var(--grid-line);
   background: transparent;
 
   /* Подсветка допустимости появляется только во время перетаскивания. */
@@ -58,47 +58,6 @@
   border-inline-end: 0;
 }
 
-.tip {
-  position: fixed;
-  z-index: 1000;
-  display: flex;
-  gap: 0.45rem;
-  align-items: flex-start;
-  inline-size: max-content;
-  max-inline-size: 17rem;
-  margin: 0;
-  padding: 0.42rem 0.6rem;
-  border: 1px solid var(--bad-line);
-  border-radius: var(--r-sm);
-  background: var(--panel);
-  color: var(--bad-ink);
-  font-size: 0.78rem;
-  font-weight: 550;
-  line-height: 1.35;
-  box-shadow: var(--lift);
-  visibility: hidden;
-  pointer-events: none;
-}
-
-.bang {
-  display: grid;
-  flex: 0 0 auto;
-  place-items: center;
-  inline-size: 1.05rem;
-  block-size: 1.05rem;
-  margin-block-start: 0.06rem;
-  border-radius: 999px;
-  background: var(--bad-soft);
-  color: var(--bad);
-  font-size: 0.72rem;
-  font-weight: 700;
-  line-height: 1;
-}
-
-.tipText {
-  min-inline-size: 0;
-}
-
 .cell[data-tone='bad'] {
   background-image: repeating-linear-gradient(-45deg, color-mix(in srgb, var(--bad) 24%, transparent) 0 1px, transparent 1px 8px);
 }
@@ -111,9 +70,6 @@
 .origin { position: absolute; inset: 7px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 0.3rem; border: 1px dashed var(--line-strong); border-radius: var(--r-sm); background: var(--panel-sunken); color: var(--muted); pointer-events: none; }
 .origin strong { font-size: 0.82rem; color: var(--text); }
 .origin > span { font-size: 0.68rem; }
-.dropLabel { position: fixed; transform: translate(-50%, -50%); padding: 0.35rem 0.6rem; border: 1px solid rgb(255 255 255 / .7); border-radius: 8px; background: var(--brand); color: white; font-size: 0.72rem; font-weight: 600; text-align: center; pointer-events: none; z-index: 40; box-shadow: var(--shadow); }
-.dropLabel[data-ok='no'] { background: var(--bad-ink); }
-.dropLabel[data-remove='yes'] { background: var(--warn-soft); color: var(--warn-ink); border-color: var(--warn-line); }
 .cell[data-over='yes'][data-remove='yes'] { background: var(--warn-soft); }
 .cell[data-over='yes'][data-remove='yes']::after { border-color: var(--warn); }
 

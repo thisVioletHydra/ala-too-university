@@ -1,10 +1,11 @@
 import type { HandKeyContext, Zone } from './hand.types.ts';
 import type { navigationPermissions } from '#interaction/input.policy.ts';
 
-import { navigateSidebar } from '#accessible/sidebar-navigation.ts';
+import { navigateSidebar } from '#accessible/sidebar.focus.ts';
+import { hasOpenPopup, isInteractiveTarget } from '#accessible/keyboard.context.ts';
 import { matchesKey } from '#accessible/keyboard.bindings.ts';
-import { keyboardGrid } from '#accessible/keyboard-grid.ts';
-import { keyboardSlot } from '#accessible/keyboard-slot.ts';
+import { keyboardGrid } from '#accessible/keyboard.grid.ts';
+import { keyboardSlot } from '#accessible/keyboard.list.ts';
 
 type Permissions = ReturnType<typeof navigationPermissions>;
 
@@ -31,10 +32,7 @@ export function recoverHandFocus(context: HandKeyContext, permissions: Permissio
   const { event, day, slot, keyboardRef, publish } = context;
   if (permissions.recoverFocus === false) return;
 
-  if (document.querySelector('dialog[open], [role="dialog"], [role="listbox"], [popover]:popover-open')) return;
-
-  const target = event.target;
-  if (target instanceof Element && target.closest('button, a[href], input, textarea, select, [contenteditable], [tabindex], [role="button"], [role="combobox"], [role="menu"], [role="slider"], [role="spinbutton"], [role="tablist"]')) return;
+  if (hasOpenPopup() || isInteractiveTarget(event.target)) return;
 
   const first = document.querySelector<HTMLElement>('[data-section-scroll] [data-section-id]');
   if (!first || first.closest('[inert], [hidden]') || first.getClientRects().length === 0) return;

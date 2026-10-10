@@ -2,6 +2,7 @@ import type { PickerReturn } from '#interaction/picker.return.ts';
 import type { LessonCardProps } from '#ui/lesson-card/lesson-card.tsx';
 import type { RefObject } from 'react';
 
+import { restoreFocus } from '#accessible/focus.dialog.ts';
 import { pickerReturnAfter, pickerReturnLesson } from '#interaction/picker.return.ts';
 import { pickerState } from '#interaction/group.policy.ts';
 import { lessonNode, LESSON_SELECTOR, PICKER_CLOSE_SELECTOR, slotOf } from '#ui/schedule-grid/slotLessons.selectors.ts';
@@ -32,6 +33,7 @@ export function useSlotPicker({ items, root }: SlotPickerInput): SlotPickerState
   const origin = useRef<HTMLElement | null>(null);
   const selected = useRef<string | null>(null);
   const returnToPicker = useRef<PickerReturn>({ kind: 'none' });
+  if (open && board.ghost !== null) setOpen(false);
 
   function show(): void {
     if (board.hold.hand || board.ghost) return;
@@ -43,7 +45,7 @@ export function useSlotPicker({ items, root }: SlotPickerInput): SlotPickerState
   function close(restore = true): void {
     dialog.current?.close();
     setOpen(false);
-    if (restore) origin.current?.focus();
+    if (restore) restoreFocus(origin.current, null);
   }
 
   useEffect(() => {
@@ -78,7 +80,11 @@ export function useSlotPicker({ items, root }: SlotPickerInput): SlotPickerState
 
   useEffect(() => {
     const state = pickerState(open, board.editor !== null);
-    if (state === 'closed') return;
+    if (state === 'closed') {
+      dialog.current?.close();
+
+      return;
+    }
 
     if (state === 'suspended-for-editor') {
       dialog.current?.close();
@@ -93,10 +99,6 @@ export function useSlotPicker({ items, root }: SlotPickerInput): SlotPickerState
       : lessonNode(dialog.current, selected.current);
     (preferred ?? fallback)?.focus();
   }, [open, board.editor]);
-
-  useEffect(() => {
-    if (open && board.ghost) close(false);
-  }, [board.ghost, open]);
 
   return { open, dialog, selected, returnToPicker, show, close };
 }

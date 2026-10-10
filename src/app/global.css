@@ -312,14 +312,3 @@ body[data-hand='yes'] [data-slot]:not([data-aim='yes']):not([data-over='yes']):f
   .sections-pane { max-height: 26rem; }
   .workspace[data-sections='hidden'] .sections-pane { max-height: 0; }
 }
-
-.schedule-summary { display: flex; flex: 1 1 20rem; align-items: center; gap: 0.65rem; min-width: 0; padding: 0.55rem 0.75rem; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); font-size: 0.75rem; }
-.schedule-summary strong { font-size: 0.8rem; white-space: nowrap; }
-.schedule-summary strong span { color: var(--muted); font-weight: 450; }
-.schedule-summary > span { color: var(--muted); white-space: nowrap; font-size: 0.7rem; }
-.schedule-summary progress { appearance: none; flex: 1; width: 4rem; min-width: 2rem; max-width: 10rem; height: 4px; border: 0; border-radius: 999px; overflow: hidden; background: var(--panel-sunken); }
-.schedule-summary progress::-webkit-progress-bar { background: var(--panel-sunken); }
-.schedule-summary progress::-webkit-progress-value { background: var(--brand); border-radius: 999px; }
-.schedule-summary progress::-moz-progress-bar { background: var(--brand); }
-
-.schedule-summary .transfer-origin { flex: 1; white-space: normal; color: var(--text); }

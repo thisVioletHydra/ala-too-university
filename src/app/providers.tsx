@@ -3,6 +3,7 @@ import type { ScheduleCatalog } from '#schedule/types.ts';
 import type { ReactNode } from 'react';
 import type { EditorRequest, ActiveDrag, DragFace, Hand, Hold, DropTarget, Landing, Flash } from '#interaction/types.ts';
 
+import { announce } from '#accessible/reader.announcements.ts';
 import { adviceMap, dragFace, handToDrag } from '#app/board-derived.ts';
 import { emptyHold, quietFlash } from '#interaction/types.ts';
 import { decideDrop } from '#interaction/drop.policy.ts';
@@ -159,11 +160,15 @@ export function Providers(props: { catalog: ScheduleCatalog, children: ReactNode
       const outcome = assignLesson({
         sectionId: hand.sectionId,
         teacherId: hand.teacherId,
-        roomId: repeatKey.current ? undefined : hand.roomId,
+        roomId: hand.roomId,
         day: target.day,
         timeSlotId: target.timeSlotId,
       });
-      if (outcome.type === 'rejected') return;
+      if (outcome.type === 'rejected') {
+        announce(outcome.text);
+
+        return;
+      }
 
       if (outcome.type === 'edit') {
         setEditor({
@@ -183,7 +188,7 @@ export function Providers(props: { catalog: ScheduleCatalog, children: ReactNode
       const created = useSchedule.getState().lessons.find((item) => !before.has(item.id));
       if (repeatKey.current) {
         if (created) {
-          setHold((current) => ({ ...current, hand: { kind: 'section', sectionId: created.sectionId, teacherId: created.teacherId, originLessonId: hand.originLessonId } }));
+          setHold((current) => ({ ...current, hand: { kind: 'section', sectionId: created.sectionId, teacherId: created.teacherId, roomId: created.roomId, originLessonId: hand.originLessonId } }));
           mark({ lessonId: created.id, sectionId: hand.sectionId });
         }
 
@@ -202,7 +207,9 @@ export function Providers(props: { catalog: ScheduleCatalog, children: ReactNode
       if (source === null || source === undefined) return;
 
       const before = new Set(useSchedule.getState().lessons.map((item) => item.id));
-      const outcome = assignLesson({ sectionId: source.sectionId, teacherId: source.teacherId, day: target.day, timeSlotId: target.timeSlotId });
+      const outcome = assignLesson({ sectionId: source.sectionId, teacherId: source.teacherId, roomId: source.roomId, day: target.day, timeSlotId: target.timeSlotId });
+      if (outcome.type === 'rejected') announce(outcome.text);
+
       if (outcome.type === 'edit') {
         setEditor({ mode: 'create', sectionId: source.sectionId, day: target.day, timeSlotId: target.timeSlotId, teacherId: outcome.teacherId, roomId: outcome.roomId, text: outcome.text });
       }
@@ -210,7 +217,7 @@ export function Providers(props: { catalog: ScheduleCatalog, children: ReactNode
       if (outcome.type === 'placed') {
         const created = useSchedule.getState().lessons.find((item) => !before.has(item.id));
         if (created) {
-          setHold((current) => ({ ...current, hand: { kind: 'section', sectionId: created.sectionId, teacherId: created.teacherId, originLessonId: source.id } }));
+          setHold((current) => ({ ...current, hand: { kind: 'section', sectionId: created.sectionId, teacherId: created.teacherId, roomId: created.roomId, originLessonId: source.id } }));
           mark({ lessonId: created.id, sectionId: created.sectionId });
         }
       }
@@ -223,7 +230,11 @@ export function Providers(props: { catalog: ScheduleCatalog, children: ReactNode
       day: target.day,
       timeSlotId: target.timeSlotId,
     });
-    if (!outcome.ok) return;
+    if (outcome.ok === false) {
+      announce(outcome.text);
+
+      return;
+    }
 
     release({ kind: 'card', lessonId: hand.lessonId });
   }

@@ -1,24 +1,3 @@
-import type { InputMethod } from '#accessible/keyboard.bindings.ts';
-
-export type PointerSample = {
-  primary: boolean;
-  eventType: string;
-  x: number;
-  y: number;
-  movementX: number;
-  movementY: number;
-};
-
-const POINTER_TAKEOVER_DISTANCE = 6;
-
-export function acceptsPointer(input: InputMethod, sample: PointerSample): boolean {
-  const hasPosition = sample.x !== 0 || sample.y !== 0;
-  const incidentalMovement = sample.eventType === 'pointermove'
-    && input === 'keyboard'
-    && Math.hypot(sample.movementX, sample.movementY) < POINTER_TAKEOVER_DISTANCE;
-  return sample.primary && hasPosition && !incidentalMovement;
-}
-
 export type NavigationContext = {
   composing: boolean;
   shiftPressed: boolean;

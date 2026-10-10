@@ -1,3 +1,4 @@
+import { nextEnabledIndex } from '#accessible/focus.group.ts';
 import { SelectOption } from './select.option.tsx';
 import { matchesAnyKey, matchesKey } from '#accessible/keyboard.bindings.ts';
 import { useEffect, useId, useRef, useState } from 'react';
@@ -44,13 +45,13 @@ export function Select(props: { label: string; value: string; options: Option[];
   }, [active, open]);
 
   function move(direction: number): void {
-    let next = active;
-    for (let count = 0; count < props.options.length; count++) {
-      next = (next + direction + props.options.length) % props.options.length;
-      if (!props.options[next]?.disabled) { setActive(next);
-        return;
-      }
-    }
+    const next = nextEnabledIndex({
+      current: active,
+      count: props.options.length,
+      direction,
+      enabled: (index) => props.options[index].disabled !== true,
+    });
+    if (next >= 0) setActive(next);
   }
 
   function selectOption(value: string): void {
@@ -91,8 +92,13 @@ export function Select(props: { label: string; value: string; options: Option[];
       }
 
       if (matchesKey('first', event.key) || matchesKey('last', event.key)) {
-        const indices = props.options.map((option, index) => option.disabled ? -1 : index).filter((index) => index >= 0);
-        setActive(matchesKey('first', event.key) ? indices[0] ?? 0 : indices.at(-1) ?? 0);
+        const next = nextEnabledIndex({
+          current: -1,
+          count: props.options.length,
+          direction: matchesKey('first', event.key) ? 1 : -1,
+          enabled: (index) => props.options[index].disabled !== true,
+        });
+        if (next >= 0) setActive(next);
 
         return;
       }

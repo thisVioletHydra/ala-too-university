@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { revealGridTarget } from './focus.scroll.ts';
 
 /** Держит цель клавиатуры в поле зрения: соседние группы не должны уезжать за край. */
 export function useAimFocus(focusTick: number): void {
@@ -9,6 +10,13 @@ export function useAimFocus(focusTick: number): void {
     if (!(node instanceof HTMLElement)) return;
 
     node.focus({ preventScroll: true });
+    const grid = node.closest<HTMLElement>('[data-keyboard-zone="grid"]');
+    if (grid) {
+      revealGridTarget(node, grid);
+
+      return;
+    }
+
     const list = node.closest<HTMLElement>('[data-section-scroll]');
     if (!list || !node.matches('[data-section-id]')) {
       node.scrollIntoView({ block: 'nearest', inline: 'nearest' });

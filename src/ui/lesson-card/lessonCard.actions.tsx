@@ -11,7 +11,7 @@ type CardActionKind = 'edit' | 'cancel';
 
 type CardActionProps = {
   lessonId: string
-  action: CardActionKind
+  action: 'cancel'
   label: string
 };
 
@@ -36,14 +36,15 @@ const ACTION_ICONS: Record<CardActionKind, ReactNode> = {
 };
 
 export function SourcePlaceholder({ lessonId, code, strip, editOnly }: SourcePlaceholderProps) {
+  if (editOnly) return null;
+
   function handleContainerClick(event: MouseEvent<HTMLDivElement>): void {
     event.stopPropagation();
   }
 
   return (
     <div className={styles.actions} data-strip={dataAttribute(strip)} data-edit-only={dataAttribute(editOnly)} onClick={handleContainerClick}>
-      {!editOnly && <CardAction lessonId={lessonId} action="cancel" label={strip ? code : SOURCE_PLACEHOLDER_LABEL} />}
-      <CardAction lessonId={lessonId} action="edit" label="Редактировать" />
+      <CardAction lessonId={lessonId} action="cancel" label={strip ? code : SOURCE_PLACEHOLDER_LABEL} />
     </div>
   );
 }
@@ -54,17 +55,11 @@ function CardAction({ lessonId, action, label }: CardActionProps) {
     id: `card-action:${lessonId}:${action}`,
     data: { kind: 'card-action', lessonId, action },
   });
-  const accessibleLabel = action === 'cancel' ? CANCEL_LABEL : label;
+  const accessibleLabel = CANCEL_LABEL;
 
   function handleClick(event: MouseEvent<HTMLButtonElement>): void {
     event.stopPropagation();
     if (board.skipClick()) return;
-
-    if (action === 'edit') {
-      board.setEditor({ mode: 'edit', lessonId });
-
-      return;
-    }
 
     board.setHold({ hand: null, aim: board.hold.aim, overKey: null, overList: false });
     requestCancelHand();
@@ -84,4 +79,26 @@ function CardAction({ lessonId, action, label }: CardActionProps) {
       {ACTION_ICONS[action] ?? label}
     </button>
   );
+}
+
+export function LessonEditButton({ lessonId, code }: { lessonId: string; code: string }) {
+  const board = useBoard();
+  function handleClick(event: MouseEvent<HTMLButtonElement>): void {
+    event.stopPropagation();
+    if (board.skipClick() || board.ghost || board.hold.hand) return;
+
+    board.setEditor({ mode: 'edit', lessonId });
+  }
+
+  return <button
+    type="button"
+    className={styles.editButton}
+    tabIndex={-1}
+    aria-label={`Редактировать занятие ${code}`}
+    title="Редактировать занятие"
+    onPointerDown={(event) => event.stopPropagation()}
+    onClick={handleClick}
+  >
+    {ACTION_ICONS.edit}
+  </button>;
 }

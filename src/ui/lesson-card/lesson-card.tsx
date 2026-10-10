@@ -3,7 +3,7 @@ import type { RoomType } from '#schedule/types.ts';
 
 import { needsTeacher } from '#ui/teacher-label.ts';
 import { LessonFaceBody } from './lessonCard.body.tsx';
-import { SourcePlaceholder } from '#ui/lesson-card/lessonCard.actions.tsx';
+import { SourcePlaceholder, LessonEditButton } from '#ui/lesson-card/lessonCard.actions.tsx';
 import { dataAttribute } from '#ui/data-attribute.ts';
 import { useBoard } from '#app/providers.tsx';
 import { useDraggable } from '@dnd-kit/core';
@@ -140,6 +140,7 @@ function LessonFace({ courseId, courseCode, courseName, code, teacherName, roomN
   const dragging = board.repeat === false && carried?.kind === 'lesson' && carried.lessonId === lessonId;
   const actions = Boolean(lessonId) && overlay === false && dragging;
   const sourceId = lessonId ?? null;
+  const canEdit = sourceId !== null && carried === null && held === false;
   const shared = cardAttributes({
     courseId,
     teacherName,
@@ -184,6 +185,7 @@ function LessonFace({ courseId, courseCode, courseName, code, teacherName, roomN
       >
         <LessonFaceBody courseCode={courseCode} courseName={courseName} code={code} teacherName={teacherName} roomName={roomName} roomType={roomType} />
       </button>
+      {canEdit && sourceId && <LessonEditButton lessonId={sourceId} code={code} />}
       {actions && sourceId ? <SourcePlaceholder lessonId={sourceId} code={code} editOnly={sourceActions === 'edit'} /> : null}
     </div>
   );

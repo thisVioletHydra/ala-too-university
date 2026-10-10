@@ -2,17 +2,18 @@ import type { ScheduleCatalog, Section } from '#schedule/types.ts';
 import type { Dataset } from '#app/schedule.store.ts';
 
 import { sectionTeacher } from '#schedule/section.teacher.ts';
-import { bindHotkeys } from '#app/hotkeys.ts';
+import { bindHotkeys } from '#accessible/keyboard.shortcuts.ts';
 import { useBoard } from '#app/providers.tsx';
 import { useSchedule } from '#app/schedule.store.ts';
 import { readStoredSchedule } from '#data/schedule.storage.ts';
-import { scheduleProgress } from '#schedule/section.progress.ts';
+import { useScheduleAnnouncements } from '#features/schedule.announcements.ts';
 import { useHand } from '#features/use-hand.ts';
 import { useSearch } from '#features/use-search.ts';
 import { useUndo } from '#features/use-undo.ts';
 import { DragGhost, HandCursor } from '#ui/drag-ghost/drag-ghost.tsx';
 import { Filters } from '#ui/filters/filters.tsx';
 import { LessonEditor } from '#ui/lesson-editor/lesson-editor.tsx';
+import { ScheduleSummary } from '#ui/schedule-summary/schedule-summary.tsx';
 import { ScheduleGrid } from '#ui/schedule-grid/schedule-grid.tsx';
 import { SectionList } from '#ui/section-list/section-list.tsx';
 import { UndoBar } from '#ui/undo-bar/undo-bar.tsx';
@@ -26,6 +27,7 @@ type WorkspaceProps = {
 };
 
 export function Workspace(props: WorkspaceProps) {
+  useScheduleAnnouncements();
   const storeCatalog = useSchedule((state) => state.catalog);
   useEffect(() => {
     if (storeCatalog) return;
@@ -93,15 +95,6 @@ export function Workspace(props: WorkspaceProps) {
   if (editor?.mode === 'section') editorKey = `section-${editor.sectionId}`;
 
   if (editor?.mode === 'create') editorKey = `${editor.sectionId}-${editor.day}-${editor.timeSlotId}`;
-
-  const { required, placed, remaining } = scheduleProgress(props.catalog.sections, lessons);
-  const carried = board.ghost ?? board.hold.hand;
-  const sourceLesson = carried?.kind === 'lesson' ? lessons.find((lesson) => lesson.id === carried.lessonId) : undefined;
-  const carriedSection = props.catalog.sections.find((section) => section.id === (carried?.kind === 'section' ? carried.sectionId : sourceLesson?.sectionId));
-  const sourceDay = props.catalog.weekDays.find((day) => day.id === sourceLesson?.day);
-  const sourceSlot = props.catalog.timeSlots.find((slot) => slot.id === sourceLesson?.timeSlotId);
-  const destinationDay = props.catalog.weekDays.find((day) => board.overKey?.startsWith(`${day.id}|`));
-  const destinationSlot = props.catalog.timeSlots.find((slot) => board.overKey?.endsWith(`|${slot.id}`));
 
   function isSectionHighlighted(section: Section): boolean {
     if (search.teacherId === null || search.teacherId === undefined) return false;
@@ -195,16 +188,7 @@ export function Workspace(props: WorkspaceProps) {
         </div>
         <section className="board">
           <div className="board-tools">
-            <div className="schedule-summary"
-            title={carried ? 'Перенос занятия: исходное место и текущая цель' : `${placed} из ${required} занятий поставлено; осталось ${remaining}`}>
-              {carried
-                ? <><strong>{carriedSection?.code}</strong><span className="transfer-origin">Откуда: {sourceLesson ? `${sourceDay?.label}, ${sourceSlot?.start}` : 'список секций'}</span><span>{destinationDay && destinationSlot ? `→ ${destinationDay.label}, ${destinationSlot.start}` : 'Выберите ячейку'}</span></>
-                : <>
-              <strong>{placed}<span> / {required} занятий</span></strong>
-              <progress value={placed} max={Math.max(required, 1)} aria-label="Прогресс составления расписания" />
-              <span>{remaining === 0 ? 'Всё готово' : `Осталось ${remaining}`}</span>
-              </>}
-            </div>
+            <ScheduleSummary catalog={props.catalog} />
           <Filters
             teachers={props.catalog.teachers}
             rooms={props.catalog.rooms}

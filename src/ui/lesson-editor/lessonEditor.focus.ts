@@ -1,7 +1,7 @@
 import type { EditorRequest } from '#interaction/types.ts';
 import type { RefObject } from 'react';
 
-import { matchesKey } from '#accessible/keyboard.bindings.ts';
+import { bindDialogFocus, restoreFocus } from '#accessible/focus.dialog.ts';
 import { useSchedule } from '#app/schedule.store.ts';
 import { useEffect } from 'react';
 
@@ -20,30 +20,12 @@ export function useEditorFocus(dialog: RefObject<HTMLDivElement | null>, request
       ? document.querySelector<HTMLElement>(`[data-slot="${CSS.escape(`${source.day}|${source.timeSlotId}`)}"]`)
       : null);
     const root = dialog.current;
-    const controls = () => Array.from(root?.querySelectorAll<HTMLElement>('button:not(:disabled), select:not(:disabled), input:not(:disabled), [tabindex="0"]') ?? []);
-    const focusFrame = window.requestAnimationFrame(() => {
-      (root?.querySelector<HTMLElement>('[role="combobox"]') ?? controls()[0])?.focus({ preventScroll: true });
-    });
-    function trap(event: KeyboardEvent): void {
-      if (matchesKey('switchArea', event.key) === null || matchesKey('switchArea', event.key) === undefined) return;
+    if (root === null) return;
 
-      const items = controls();
-      const first = items[0];
-      const last = items[items.length - 1];
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-        last?.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first?.focus();
-      }
-    }
-
-    root?.addEventListener('keydown', trap);
-    return () => {
-      window.cancelAnimationFrame(focusFrame);
-      root?.removeEventListener('keydown', trap);
-      window.requestAnimationFrame(() => {
+    return bindDialogFocus({
+      root,
+      initial: root.querySelector<HTMLElement>('[role="combobox"]'),
+      restore: () => {
         if (document.querySelector('[role="dialog"][aria-modal="true"]')) return;
 
         const picker = document.querySelector<HTMLDialogElement>('dialog[data-slot-picker][open]');
@@ -53,9 +35,8 @@ export function useEditorFocus(dialog: RefObject<HTMLDivElement | null>, request
           return;
         }
 
-        if (previous instanceof HTMLElement && previous.isConnected && !previous.closest('dialog:not([open])')) previous.focus();
-        else if (fallback?.isConnected) fallback.focus();
-      });
-    };
-  }, []);
+        restoreFocus(previous, fallback);
+      },
+    });
+  }, [dialog, request]);
 }

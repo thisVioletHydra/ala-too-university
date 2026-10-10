@@ -2,6 +2,7 @@ import type { DragEndEvent, DragOverEvent, DragStartEvent } from '@dnd-kit/core'
 import type { Dispatch, MutableRefObject, SetStateAction } from 'react';
 import type { ActiveDrag, DropTarget, EditorRequest, Hand, Hold } from '#interaction/types.ts';
 
+import { announce } from '#accessible/reader.announcements.ts';
 import { emptyHold } from '#interaction/types.ts';
 import { assignLesson } from '#features/lesson.assign.ts';
 import { altKey, isDay, isRecord } from '#app/board-derived.ts';
@@ -119,6 +120,8 @@ export function useDndHandlers(deps: DndDeps) {
         day: data.day,
         timeSlotId: data.timeSlotId,
       });
+      if (outcome.type === 'rejected') announce(outcome.text);
+
       if (outcome.type === 'edit') {
         setEditor({
           mode: 'create',
@@ -139,7 +142,9 @@ export function useDndHandlers(deps: DndDeps) {
         const source = useSchedule.getState().lessons.find((item) => item.id === current.lessonId);
         if (source === null || source === undefined) return;
 
-        const outcome = assignLesson({ sectionId: source.sectionId, teacherId: source.teacherId, day: data.day, timeSlotId: data.timeSlotId });
+        const outcome = assignLesson({ sectionId: source.sectionId, teacherId: source.teacherId, roomId: source.roomId, day: data.day, timeSlotId: data.timeSlotId });
+        if (outcome.type === 'rejected') announce(outcome.text);
+
         if (outcome.type === 'edit') {
           setEditor({ mode: 'create', sectionId: source.sectionId, day: data.day, timeSlotId: data.timeSlotId, teacherId: outcome.teacherId, roomId: outcome.roomId, text: outcome.text });
         }
@@ -147,7 +152,8 @@ export function useDndHandlers(deps: DndDeps) {
         return;
       }
 
-      useSchedule.getState().copyLesson({ lessonId: current.lessonId, day: data.day, timeSlotId: data.timeSlotId });
+      const outcome = useSchedule.getState().copyLesson({ lessonId: current.lessonId, day: data.day, timeSlotId: data.timeSlotId });
+      if (outcome.ok === false) announce(outcome.text);
 
       return;
     }
@@ -155,7 +161,8 @@ export function useDndHandlers(deps: DndDeps) {
     const lesson = useSchedule.getState().lessons.find((item) => item.id === current.lessonId);
     if (lesson?.day === data.day && lesson.timeSlotId === data.timeSlotId) return;
 
-    useSchedule.getState().moveLesson({ lessonId: current.lessonId, day: data.day, timeSlotId: data.timeSlotId });
+    const outcome = useSchedule.getState().moveLesson({ lessonId: current.lessonId, day: data.day, timeSlotId: data.timeSlotId });
+    if (outcome.ok === false) announce(outcome.text);
   }
 
   return { onDragStart, onDragOver, onDragEnd };

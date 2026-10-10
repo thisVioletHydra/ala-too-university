@@ -1,6 +1,6 @@
-import type { SidebarTarget, SidebarDestination } from '#interaction/sidebar.navigation.ts';
+import type { SidebarTarget, SidebarDestination } from '#accessible/sidebar.navigation.ts';
 
-import { sidebarDestination } from '#interaction/sidebar.navigation.ts';
+import { sidebarDestination } from '#accessible/sidebar.navigation.ts';
 
 // DOM is read only at this adapter boundary; the route itself is framework-free.
 export function navigateSidebar(target: HTMLElement, key: string, cardCount: number): SidebarDestination {

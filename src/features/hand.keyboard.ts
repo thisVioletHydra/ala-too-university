@@ -2,7 +2,7 @@ import type { HandKeyContext } from './hand.types.ts';
 
 import { hasCommandModifier, matchesKey } from '#accessible/keyboard.bindings.ts';
 import { navigationPermissions } from '#interaction/input.policy.ts';
-import { isTextInputTarget, targetZone } from './hand.targets.ts';
+import { isTextInputTarget, targetZone } from '#accessible/keyboard.context.ts';
 import { handleSidebarNavigation, recoverHandFocus, navigateHand } from './hand.navigation.ts';
 import { handleHandCommand } from './hand.commands.ts';
 import { placeHand } from './hand.placement.ts';

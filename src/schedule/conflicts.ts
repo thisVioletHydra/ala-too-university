@@ -106,7 +106,7 @@ export function explainSlot(input: ExplainInput): SlotAdvice {
     };
   }
 
-  if (input.teacherId && input.roomId) {
+  if (input.teacherId !== null && input.roomId) {
     const result = placementConflict({
       placement: {
         sectionId: input.section.id,

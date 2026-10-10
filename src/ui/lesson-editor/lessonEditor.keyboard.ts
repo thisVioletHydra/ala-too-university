@@ -1,8 +1,7 @@
 import type { KeyboardEvent } from 'react';
 
 import { matchesKey } from '#accessible/keyboard.bindings.ts';
-
-const CONTROL_SELECTOR = 'button:not(:disabled), select:not(:disabled), input:not(:disabled), [tabindex="0"]';
+import { focusableControls, focusNext } from '#accessible/focus.group.ts';
 
 /** Escape закрывает редактор, если событие ещё никто не обработал. */
 export function closeOnEscape(event: KeyboardEvent<HTMLDivElement>, onClose: () => void): void {
@@ -25,16 +24,15 @@ export function moveBetweenControls(event: KeyboardEvent<HTMLDivElement>): void 
 
   const vertical = matchesKey('previous', event.key) || matchesKey('next', event.key);
   const controls = editorControls(event.currentTarget, vertical);
-  const current = controls.indexOf(document.activeElement as HTMLElement);
   const direction = matchesKey('previous', event.key) || matchesKey('left', event.key) ? -1 : 1;
 
   event.preventDefault();
   event.stopPropagation();
-  controls[(current + direction + controls.length) % controls.length]?.focus();
+  focusNext(controls, direction);
 }
 
 function editorControls(root: HTMLElement, vertical: boolean): HTMLElement[] {
-  const controls = Array.from(root.querySelectorAll<HTMLElement>(CONTROL_SELECTOR))
+  const controls = focusableControls(root)
     .filter((control) => vertical === false || control.hasAttribute('data-editor-delete') === false);
   if (vertical === false) return controls;
 

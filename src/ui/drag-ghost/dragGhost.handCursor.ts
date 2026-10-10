@@ -1,8 +1,9 @@
+import type { Hand } from '#interaction/types.ts';
 import type { CursorState } from '#interaction/cursor.state.ts';
 import type { ScheduleCatalog } from '#schedule/types.ts';
 import type { ReactNode, RefObject } from 'react';
 
-import { acceptsPointer } from '#interaction/input.policy.ts';
+import { acceptsPointer } from '#accessible/input.pointer.ts';
 import { isInteractionKey } from '#accessible/keyboard.bindings.ts';
 import { cannotFly, firstSlotWidth, heldDrag, landingBox, placeAim, placeAt, sourceNode } from '#ui/drag-ghost/dragGhost.geometry.ts';
 import { heldCard } from '#ui/drag-ghost/dragGhost.heldCard.tsx';
@@ -10,7 +11,7 @@ import { resolveCursorState, ownsAnimation } from '#interaction/cursor.state.ts'
 import { setCardInput, setHandActive } from '#ui/drag-ghost/dragGhost.bodyFlags.ts';
 import { useBoard } from '#app/providers.tsx';
 import { useSchedule } from '#app/schedule.store.ts';
-import { useEffect, useEffectEvent, useLayoutEffect, useRef } from 'react';
+import { useEffect, useEffectEvent, useLayoutEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 
 export type HandCursorState = {
@@ -32,10 +33,12 @@ export function useHandCursor(catalog: ScheduleCatalog): HandCursorState {
   const cursor = useRef<CursorState>({ phase: 'idle' });
   const input = useRef<'pointer' | 'keyboard'>('pointer');
   const pointer = useRef<{ x: number, y: number } | null>(null);
-  const snapshot = useRef<ReactNode>(null);
+  const [snapshot, setSnapshot] = useState<{ hand: Hand | null; content: ReactNode }>({ hand: null, content: null });
   const generation = useRef(0);
   const hand = board.hold.hand;
   const card = hand ? heldCard(catalog, lessons, remembered, heldDrag(hand)) : null;
+  if (hand !== snapshot.hand) setSnapshot({ hand, content: card ?? snapshot.content });
+
   const complete = useEffectEvent(() => board.clearLanding());
 
   useLayoutEffect(() => {
@@ -49,8 +52,6 @@ export function useHandCursor(catalog: ScheduleCatalog): HandCursorState {
     }
 
     if (hand) {
-
-      snapshot.current = card;
       if (board.landing) complete();
 
       if (el === null || el === undefined) return;
@@ -71,11 +72,7 @@ export function useHandCursor(catalog: ScheduleCatalog): HandCursorState {
     }
 
     const landing = board.landing;
-    if (landing === null || landing === undefined) {
-      snapshot.current = null;
-
-      return;
-    }
+    if (landing === null || landing === undefined) return;
 
     const returning = landing.kind === 'tray';
     const target = returning ? null : landingBox(landing);
@@ -108,7 +105,7 @@ export function useHandCursor(catalog: ScheduleCatalog): HandCursorState {
       animation.onfinish = null;
       animation.cancel();
     };
-  }, [hand, board.landing, board.editor, board.hold.aim]);
+  }, [hand, card, board.landing, board.editor, board.hold.aim]);
 
   useEffect(() => {
     function point(event: PointerEvent): void {
@@ -159,7 +156,7 @@ export function useHandCursor(catalog: ScheduleCatalog): HandCursorState {
     return () => setHandActive(false);
   }, [hand, board.editor]);
 
-  const content = board.editor ? null : card ?? (board.landing ? snapshot.current : null);
+  const content = board.editor ? null : card ?? (board.landing ? snapshot.content : null);
 
   return { node, content };
 }

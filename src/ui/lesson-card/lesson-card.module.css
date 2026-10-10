@@ -312,3 +312,25 @@
 .actions[data-edit-only='yes'] .action[data-action='edit'] {
   pointer-events: auto;
 }
+
+.editButton {
+  position: absolute;
+  inset-inline-end: .45rem;
+  inset-block-end: .4rem;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  inline-size: 26px;
+  block-size: 26px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--panel);
+  color: var(--muted);
+  opacity: 0;
+  pointer-events: none;
+}
+.wrap:hover .editButton { opacity: 1; pointer-events: auto; }
+.editButton:hover { color: var(--brand); border-color: var(--brand-line); background: var(--brand-soft); }
+.wrap:has(.editButton) .foot { padding-inline-end: 1.8rem; }
+@media (hover: none) { .editButton { opacity: 1; pointer-events: auto; } }

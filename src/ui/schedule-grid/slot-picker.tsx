@@ -5,6 +5,7 @@ import type { RefObject } from 'react';
 import { keyboardHints, matchesKey } from '#accessible/keyboard.bindings.ts';
 import { pickerReturnAfter } from '#interaction/picker.return.ts';
 import { useBoard } from '#app/providers.tsx';
+import { focusNext } from '#accessible/focus.group.ts';
 import { LessonCard } from '#ui/lesson-card/lesson-card.tsx';
 import { createPortal } from 'react-dom';
 
@@ -30,10 +31,7 @@ export function SlotPicker({ label, items, dialog: dialogRef, selected: selected
     if (matchesKey('next', event.key) || matchesKey('previous', event.key)) {
       event.preventDefault();
       const direction = matchesKey('next', event.key) ? 1 : -1;
-      let next = (active + direction + cards.length) % cards.length;
-      if (active < 0) next = direction === 1 ? 0 : cards.length - 1;
-
-      cards[next]?.focus();
+      focusNext(cards, direction);
     }
 
     if (active >= 0 && (matchesKey('edit', event.key) || matchesKey('place', event.key))) {
@@ -53,9 +51,11 @@ export function SlotPicker({ label, items, dialog: dialogRef, selected: selected
 
     if (matchesKey('switchArea', event.key)) {
       event.preventDefault();
-      const stops = [...cards, event.currentTarget.querySelector<HTMLElement>('[data-close-picker]')!];
-      const index = stops.indexOf(document.activeElement as HTMLElement);
-      stops[(index + (event.shiftKey ? -1 : 1) + stops.length) % stops.length]?.focus();
+      const stops = [...cards];
+      const close = event.currentTarget.querySelector<HTMLElement>('[data-close-picker]');
+      if (close) stops.push(close);
+
+      focusNext(stops, event.shiftKey ? -1 : 1);
     }
   }
 

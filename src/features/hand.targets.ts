@@ -1,6 +1,5 @@
 import type { SlotAdvice } from '#schedule/conflicts.ts';
 import type { Lesson, WeekDay } from '#schedule/types.ts';
-import type { Zone } from '#features/hand.types.ts';
 
 import { slotKey } from '#interaction/slot.key.ts';
 
@@ -66,25 +65,5 @@ export function lessonPosition(
   if (day < 0 || slot < 0) return null;
 
   return { day, slot };
-}
-
-export function targetZone(target: EventTarget | null): Zone | null {
-  if (!(target instanceof Element)) return null;
-
-  if (target.closest('[data-keyboard-zone="grid"]')) return 'grid';
-
-  if (target.closest('[data-keyboard-zone="list"]')) return 'list';
-
-  return null;
-}
-
-export function isTextInputTarget(target: EventTarget | null): boolean {
-  if (!(target instanceof HTMLElement)) return false;
-
-  if (target.closest('[role="dialog"]')) return true;
-
-  const tag = target.tagName;
-
-  return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || target.isContentEditable;
 }
 

@@ -3,6 +3,7 @@
  * Компоненты обращаются только к переменным — своих значений в модулях нет.
  */
 :root {
+  --toolbar-height: 44px;
   color-scheme: light;
 
   /* Тёплые нейтральные поверхности. */
@@ -12,6 +13,8 @@
   --panel-soft: #ffffff;
   --panel-sunken: #edf1f5;
   --grid-head: #ffffff;
+  --grid-surface: #fafbfd;
+  --grid-line: #e2e7ed;
 
   /* Текст: слейт вместо почти чёрного. */
   --ink: #25262b;

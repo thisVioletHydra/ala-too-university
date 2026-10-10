@@ -1,0 +1,65 @@
+.row {
+  container: schedule-summary / inline-size;
+  display: flex;
+  flex: 1 1 22rem;
+  align-items: center;
+  gap: .75rem;
+  min-inline-size: 0;
+}
+.summary {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: .65rem;
+  min-inline-size: 0;
+  min-block-size: var(--toolbar-height);
+  padding: .3rem .6rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--panel);
+  color: var(--text);
+  font-size: .72rem;
+}
+.heading { color: var(--ink); font-size: .95rem; font-weight: 650; white-space: nowrap; }
+.count { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.remaining { color: var(--muted); font-size: .7rem; white-space: nowrap; }
+.progress {
+  appearance: none;
+  flex: 0 1 8rem;
+  inline-size: 8rem;
+  min-inline-size: 2rem;
+  block-size: 4px;
+  border: 0;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--panel-sunken);
+}
+.progress::-webkit-progress-bar { background: var(--panel-sunken); }
+.progress::-webkit-progress-value { background: var(--brand); border-radius: 999px; }
+.progress::-moz-progress-bar { background: var(--brand); }
+.code { flex-shrink: 0; padding: .2rem .4rem; border-radius: 7px; background: var(--panel); font-weight: 650; }
+.message { display: flex; align-items: center; gap: .6rem; min-inline-size: 0; overflow: hidden; }
+.message strong { flex-shrink: 0; white-space: nowrap; }
+.message > span { color: var(--muted); min-inline-size: 0; white-space: normal; line-height: 1.25; }
+.destination { color: var(--muted); font-size: .65rem; white-space: nowrap; text-align: end; }
+.summary[data-transfer='yes'] {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  column-gap: .6rem;
+  padding: .3rem .6rem;
+}
+.summary[data-tone='bad'] { border-color: var(--bad-line); background: var(--bad-soft); }
+.summary[data-tone='bad'] .message strong,
+.summary[data-tone='bad'] .message > span { color: var(--bad-ink); }
+.summary[data-tone='warning'] { border-color: var(--warn-line); background: var(--warn-soft); }
+.summary[data-tone='warning'] .message strong { color: var(--warn-ink); }
+.summary[data-tone='ok'] { border-color: var(--brand); background: var(--brand-soft); }
+@container schedule-summary (max-width: 42rem) {
+  .destination { display: none; }
+  .summary[data-transfer='yes'] { grid-template-columns: auto minmax(0, 1fr); }
+  .message strong { display: none; }
+}
+@container schedule-summary (max-width: 30rem) {
+  .summary[data-transfer='yes'] { grid-template-columns: minmax(0, 1fr); }
+  .code { display: none; }
+}

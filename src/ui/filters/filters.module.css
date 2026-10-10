@@ -1,2 +1,10 @@
-.row { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 0.5rem; flex: 0 1 22rem; min-width: 0; align-items: center; }
+.row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.5rem; flex: 0 1 22rem; min-width: 0; align-items: center; }
+.row :global([role='combobox']) {
+  border-radius: 999px;
+  min-block-size: var(--toolbar-height);
+}
+.row :global([role='combobox']):hover {
+  border-color: #6da8f5;
+  box-shadow: 0 0 0 1px rgb(109 168 245 / 30%);
+}
 @media (width < 600px) { .row { flex-basis: 100%; } }

@@ -1,6 +1,7 @@
 import type { ScheduleCatalog } from '#schedule/types.ts';
 import type { Dataset } from '#app/schedule.store.ts';
 
+import { ReaderStatus } from '#accessible/reader.status.tsx';
 import { Providers } from '#app/providers.tsx';
 import { Workspace } from '#app/workspace.tsx';
 import { loadSchedule } from '#data/schedule.parser.ts';
@@ -43,7 +44,6 @@ export default function App() {
   useEffect(() => {
     let active = true;
     const fail = new URLSearchParams(location.search).has('fail');
-    setStatus('loading');
     loadSchedule({ fail }).then((next) => {
       if (!active) return;
 
@@ -84,6 +84,7 @@ export default function App() {
 
   return (
     <Providers catalog={catalog}>
+      <ReaderStatus />
       <Workspace
         catalog={catalog}
         dataset={dataset}

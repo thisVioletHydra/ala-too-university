@@ -5,7 +5,7 @@ import { resolveCursorState, ownsAnimation } from './cursor.state.ts';
 import { decideDrop } from './drop.policy.ts';
 import { navigationPermissions } from './input.policy.ts';
 import { pickerReturnAfter, pickerReturnLesson } from './picker.return.ts';
-import { sidebarDestination } from './sidebar.navigation.ts';
+import { sidebarDestination } from '#accessible/sidebar.navigation.ts';
 
 const original: Lesson = {
   id: 'original',

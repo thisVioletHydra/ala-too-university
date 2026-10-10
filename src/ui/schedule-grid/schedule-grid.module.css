@@ -11,7 +11,7 @@
   scrollbar-gutter: stable;
   border: 1px solid var(--line);
   border-radius: var(--r-lg);
-  background: var(--panel);
+  background: var(--grid-surface);
   box-shadow: var(--shadow);
 
   /* Сетка получает фокус программно — рамку показывают слоты. */

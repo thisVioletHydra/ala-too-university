@@ -38,7 +38,7 @@ export function ScheduleGrid(props: ScheduleGridProps) {
         if (event.target.matches(':focus-visible')) props.onEnter();
       }}
     >
-      <div className={styles.corner} aria-hidden="true" />
+      <div className={styles.corner} data-grid-corner aria-hidden="true" />
       {props.catalog.weekDays.map((day) => (
         <div key={day.id} className={styles.head} title={day.label}>{shortDay[day.id]}<span className={styles.dayName}>{day.label}</span></div>
       ))}

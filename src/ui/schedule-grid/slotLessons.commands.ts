@@ -1,6 +1,7 @@
 import type { LessonCardProps } from '#ui/lesson-card/lesson-card.tsx';
 import type { Dispatch, RefObject, SetStateAction } from 'react';
 
+import { nextEnabledIndex } from '#accessible/focus.group.ts';
 import { groupCommand } from '#interaction/group.policy.ts';
 import { lessonNode, slotOf } from '#ui/schedule-grid/slotLessons.selectors.ts';
 import { matchesAnyKey, matchesKey } from '#accessible/keyboard.bindings.ts';
@@ -69,7 +70,7 @@ export function useSlotCommands(input: SlotCommandsInput): void {
       }
 
       if (strips === false && card) {
-        if (matchesAnyKey(CARD_ACTIONS, event.key) === null || matchesAnyKey(CARD_ACTIONS, event.key) === undefined) return;
+        if (matchesAnyKey(CARD_ACTIONS, event.key) === false) return;
 
         event.preventDefault();
         event.stopPropagation();
@@ -86,7 +87,8 @@ export function useSlotCommands(input: SlotCommandsInput): void {
         if (matchesKey('cancel', event.key)) slot?.focus();
 
         if (matchesKey('previous', event.key) || matchesKey('next', event.key)) {
-          const next = items[(index + (matchesKey('next', event.key) ? 1 : -1) + items.length) % items.length];
+          const nextIndex = nextEnabledIndex({ current: index, count: items.length, direction: matchesKey('next', event.key) ? 1 : -1 });
+          const next = items[nextIndex];
           lessonNode(root.current, next.lessonId)?.focus();
         }
 
