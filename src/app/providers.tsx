@@ -5,17 +5,15 @@ import type { EditorRequest, ActiveDrag, DragFace, Hand, Hold, DropTarget, Landi
 
 import { adviceMap, dragFace, handToDrag } from '#app/board-derived.ts';
 import { emptyHold, quietFlash } from '#interaction/types.ts';
-import { decideDrop } from '#interaction/drop-policy.ts';
+import { decideDrop } from '#interaction/drop.policy.ts';
 import { DndContext, PointerSensor, pointerWithin, useSensor, useSensors } from '@dnd-kit/core';
-import { assignLesson } from '#features/assign-lesson.ts';
-import { moveLesson } from '#features/move-lesson.ts';
-import { unassignLesson } from '#features/unassign-lesson.ts';
+import { assignLesson } from '#features/lesson.assign.ts';
 import { useDndHandlers } from '#app/use-dnd-handlers.ts';
 import { useSchedule } from '#app/schedule.store.ts';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
 export type { EditorRequest, ActiveDrag, DragFace, Hand, Hold, DropTarget, Landing, Flash } from '#interaction/types.ts';
-export { slotKey } from '#interaction/slot-key.ts';
+export { slotKey } from '#interaction/slot.key.ts';
 
 type BoardContextValue = {
   repeat: boolean, advice: Map<string, SlotAdvice>, overKey: string | null, overUnassign: boolean, ghost: ActiveDrag | null, face: DragFace | null, teacherNames: Record<string, string>, roomNames: Record<string, string>, editor: EditorRequest | null, setEditor: (editor: EditorRequest | null) => void, hold: Hold, setHold: (hold: Hold) => void, landing: Landing | null, clearLanding: () => void, dropHand: (hand: Hand, target: DropTarget) => void, skipClick: () => boolean, flash: Flash, mark: (flash: Flash) => void
@@ -124,7 +122,7 @@ export function Providers(props: { catalog: ScheduleCatalog, children: ReactNode
       setHold((current) => ({ ...current, hand: { kind: 'section', sectionId: source.sectionId, teacherId: source.teacherId, roomId: source.roomId, originLessonId: source.id } }));
     }
 
-    unassignLesson(existing.id);
+    useSchedule.getState().unassignLesson(existing.id);
 
     return true;
   }
@@ -141,7 +139,7 @@ export function Providers(props: { catalog: ScheduleCatalog, children: ReactNode
           document.querySelector<HTMLElement>(`[data-section-id="${CSS.escape(hand.sectionId)}"]`)?.focus();
         });
       } else {
-        unassignLesson(hand.lessonId);
+        useSchedule.getState().unassignLesson(hand.lessonId);
         release({ kind: 'tray' });
       }
 
@@ -220,7 +218,7 @@ export function Providers(props: { catalog: ScheduleCatalog, children: ReactNode
       return;
     }
 
-    const outcome = moveLesson({
+    const outcome = useSchedule.getState().moveLesson({
       lessonId: hand.lessonId,
       day: target.day,
       timeSlotId: target.timeSlotId,

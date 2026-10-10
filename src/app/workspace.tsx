@@ -1,12 +1,12 @@
 import type { ScheduleCatalog, Section } from '#schedule/types.ts';
 import type { Dataset } from '#app/schedule.store.ts';
 
-import { sectionTeacher } from '#schedule/section-teacher.ts';
+import { sectionTeacher } from '#schedule/section.teacher.ts';
 import { bindHotkeys } from '#app/hotkeys.ts';
 import { useBoard } from '#app/providers.tsx';
 import { useSchedule } from '#app/schedule.store.ts';
 import { readStoredSchedule } from '#data/schedule.storage.ts';
-import { scheduleProgress } from '#schedule/section-progress.ts';
+import { scheduleProgress } from '#schedule/section.progress.ts';
 import { useHand } from '#features/use-hand.ts';
 import { useSearch } from '#features/use-search.ts';
 import { useUndo } from '#features/use-undo.ts';
@@ -48,7 +48,7 @@ export function Workspace(props: WorkspaceProps) {
   const courseCode = useCallback((section: Section) => {
     return props.catalog.courses.find((course) => course.id === section.courseId)?.code ?? section.code;
   }, [props.catalog]);
-  const search = useSearch(props.catalog.sections, lessons, courseName, remembered);
+  const search = useSearch({ sections: props.catalog.sections, lessons, courseName, remembered });
   const hand = useHand({
     listHidden: sectionsHidden,
     sections: search.visible,

@@ -1,7 +1,7 @@
 import type { ConflictResult, Lesson, LessonEdit, LessonMove, Placement, ScheduleCatalog } from '#schedule/types.ts';
 
 import { placementConflict } from '#schedule/conflicts.ts';
-import { sectionAssignmentConflict } from '#schedule/section-assignment.ts';
+import { sectionAssignmentConflict } from '#schedule/section.assignment.ts';
 import { create } from 'zustand';
 
 const historyLimit = 40;

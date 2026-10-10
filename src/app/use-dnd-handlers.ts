@@ -3,13 +3,10 @@ import type { Dispatch, MutableRefObject, SetStateAction } from 'react';
 import type { ActiveDrag, DropTarget, EditorRequest, Hand, Hold } from '#interaction/types.ts';
 
 import { emptyHold } from '#interaction/types.ts';
-import { assignLesson } from '#features/assign-lesson.ts';
-import { copyLesson } from '#features/copy-lesson.ts';
-import { moveLesson } from '#features/move-lesson.ts';
-import { unassignLesson } from '#features/unassign-lesson.ts';
+import { assignLesson } from '#features/lesson.assign.ts';
 import { altKey, isDay, isRecord } from '#app/board-derived.ts';
 import { isOutsideBounds } from '#interaction/bounds.ts';
-import { slotKey } from '#interaction/slot-key.ts';
+import { slotKey } from '#interaction/slot.key.ts';
 import { useSchedule } from '#app/schedule.store.ts';
 
 type DndDeps = {
@@ -91,13 +88,13 @@ export function useDndHandlers(deps: DndDeps) {
 
     if (data.kind === 'card-action' && current.kind === 'lesson' && data.lessonId === current.lessonId) {
       if (data.action === 'edit') setEditor({ mode: 'edit', lessonId: current.lessonId });
-      else if (data.action === 'delete') unassignLesson(current.lessonId);
+      else if (data.action === 'delete') useSchedule.getState().unassignLesson(current.lessonId);
 
       return;
     }
 
     if (data.kind === 'unassign') {
-      if (current.kind === 'lesson') unassignLesson(current.lessonId);
+      if (current.kind === 'lesson') useSchedule.getState().unassignLesson(current.lessonId);
 
       return;
     }
@@ -150,7 +147,7 @@ export function useDndHandlers(deps: DndDeps) {
         return;
       }
 
-      copyLesson({ lessonId: current.lessonId, day: data.day, timeSlotId: data.timeSlotId });
+      useSchedule.getState().copyLesson({ lessonId: current.lessonId, day: data.day, timeSlotId: data.timeSlotId });
 
       return;
     }
@@ -158,7 +155,7 @@ export function useDndHandlers(deps: DndDeps) {
     const lesson = useSchedule.getState().lessons.find((item) => item.id === current.lessonId);
     if (lesson?.day === data.day && lesson.timeSlotId === data.timeSlotId) return;
 
-    moveLesson({ lessonId: current.lessonId, day: data.day, timeSlotId: data.timeSlotId });
+    useSchedule.getState().moveLesson({ lessonId: current.lessonId, day: data.day, timeSlotId: data.timeSlotId });
   }
 
   return { onDragStart, onDragOver, onDragEnd };

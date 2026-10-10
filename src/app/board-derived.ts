@@ -2,9 +2,9 @@ import type { SlotAdvice } from '#schedule/conflicts.ts';
 import type { ScheduleCatalog, WeekDay } from '#schedule/types.ts';
 import type { ActiveDrag, DragFace, Hand } from '#interaction/types.ts';
 
-import { sectionTeacher } from '#schedule/section-teacher.ts';
+import { sectionTeacher } from '#schedule/section.teacher.ts';
 import { explainSlot } from '#schedule/conflicts.ts';
-import { slotKey } from '#interaction/slot-key.ts';
+import { slotKey } from '#interaction/slot.key.ts';
 
 export function handToDrag(hand: Hand | null, copy: boolean): ActiveDrag | null {
   if (hand === null || hand === undefined) return null;
