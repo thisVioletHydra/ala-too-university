@@ -1,9 +1,9 @@
-import type { HandInput, HandStep, Zone } from '#features/hand-types.ts';
+import type { HandInput, HandStep, Zone } from '#features/hand.types.ts';
 
-import { firstOpen, isHome } from '#features/hand-targets.ts';
-import { handleHandKey } from '#features/hand-keyboard.ts';
+import { firstAvailableSlot, isOriginalSlot } from '#features/hand.targets.ts';
+import { handleHandKey } from '#features/hand.keyboard.ts';
 import { slotKey, useBoard } from '#app/providers.tsx';
-import { useAimFocus } from '#features/hand-focus.ts';
+import { useAimFocus } from '#features/hand.focus.ts';
 import { useEffect, useEffectEvent, useLayoutEffect, useRef, useState } from 'react';
 
 export function useHand(input: HandInput) {
@@ -13,9 +13,9 @@ export function useHand(input: HandInput) {
   const [cursor, setCursor] = useState({ day: 0, slot: 0 });
   const [armed, setArmed] = useState(false);
   const [focusTick, setFocusTick] = useState(0);
-  const keys = useRef(false);
-  const seek = useRef(false);
-  const leftList = useRef(false);
+  const keyboardRef = useRef(false);
+  const seekRef = useRef(false);
+  const leftListRef = useRef(false);
   const hand = board.hold.hand;
 
   const list = input.sections.length === 0 ? 0 : Math.min(listIndex, input.sections.length - 1);
@@ -24,7 +24,7 @@ export function useHand(input: HandInput) {
 
   /** Секция без клавиатуры не должна сама ронять список в «область». */
   function keepOffList(next: Zone): boolean {
-    return next === 'list' && hand?.kind === 'section' && !keys.current && !leftList.current;
+    return next === 'list' && hand?.kind === 'section' && !keyboardRef.current && !leftListRef.current;
   }
 
   /** Курсор уже стоит в этой клетке и уже вооружён — повторный переход не нужен. */
@@ -33,41 +33,47 @@ export function useHand(input: HandInput) {
   }
 
   function publish(next: HandStep): void {
-    if (next.hand !== hand) leftList.current = false;
+    if (next.hand !== hand) leftListRef.current = false;
 
     const dayId = input.days[next.day];
     const slotId = input.slots[next.slot];
     const key = dayId && slotId ? slotKey(dayId, slotId) : '';
     const returning = next.hand !== null && next.zone === 'list';
+    let aim = key;
+    if (next.zone === 'list') aim = returning ? 'list:return' : `list:${next.list}`;
+
     setZone(next.zone);
     setListIndex(next.list);
     setCursor({ day: next.day, slot: next.slot });
     setArmed(true);
     board.setHold({
       hand: next.hand,
-      aim: returning ? 'list:return' : next.zone === 'list' ? `list:${next.list}` : key,
+      aim,
       overKey: next.hand && next.zone === 'grid' ? key : null,
       overList: returning,
     });
     if (next.focus) setFocusTick((tick) => tick + 1);
   }
 
+  const seekOpenSlot = useEffectEvent(() => {
+    if (!seekRef.current || hand === null || zone !== 'grid') return;
+
+    seekRef.current = false;
+    const fit = firstAvailableSlot(input.days, input.slots, input.lessons, board.advice) ?? { day, slot };
+    publish({ zone: 'grid', list, day: fit.day, slot: fit.slot, hand, focus: true });
+  });
 
   useLayoutEffect(() => {
-    if (!seek.current || hand === null || zone !== 'grid') return;
-
-    seek.current = false;
-    const fit = firstOpen(input.days, input.slots, input.lessons, board.advice) ?? { day, slot };
-    publish({ zone: 'grid', list, day: fit.day, slot: fit.slot, hand, focus: true });
+    seekOpenSlot();
   }, [hand, zone, board.advice]);
 
   useEffect(() => {
     function onPointer(event: PointerEvent): void {
-      if (!keys.current || !event.isPrimary) return;
+      if (!keyboardRef.current || !event.isPrimary) return;
 
       if (event.type === 'pointermove' && event.movementX === 0 && event.movementY === 0) return;
 
-      keys.current = false;
+      keyboardRef.current = false;
     }
 
     window.addEventListener('pointerdown', onPointer);
@@ -81,7 +87,7 @@ export function useHand(input: HandInput) {
   useAimFocus(focusTick);
 
   const onKeyDown = useEffectEvent((event: KeyboardEvent) => {
-    handleHandKey({ event, input, board, hand, zone, list, day, slot, keys, seek, publish });
+    handleHandKey({ event, input, board, hand, zone, list, day, slot, keyboardRef, seekRef, publish });
   });
 
   useEffect(() => {
@@ -89,76 +95,91 @@ export function useHand(input: HandInput) {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, []);
 
+  function grabSection(sectionId: string, index: number): void {
+    publish({
+      zone: 'grid',
+      list: index,
+      day,
+      slot,
+      hand: { kind: 'section', sectionId },
+      focus: true,
+    });
+  }
+
+  function grabLesson(lessonId: string, dayIndex: number, slotIndex: number): void {
+    publish({
+      zone: 'grid',
+      list,
+      day: dayIndex,
+      slot: slotIndex,
+      hand: { kind: 'lesson', lessonId },
+      focus: true,
+    });
+  }
+
+  function enter(next: Zone): void {
+    if (keepOffList(next)) return;
+
+    if (next === zone && armed) return;
+
+    publish({ zone: next, list, day, slot, hand, focus: false });
+  }
+
+  function pointGrid(dayIndex: number, slotIndex: number): void {
+    if (keyboardRef.current || !hand || board.ghost) return;
+
+    if (zone === 'grid' && day === dayIndex && slot === slotIndex) return;
+
+    publish({ zone: 'grid', list, day: dayIndex, slot: slotIndex, hand, focus: false });
+  }
+
+  function focusGrid(dayIndex: number, slotIndex: number): void {
+    if (alreadyAimed(dayIndex, slotIndex)) return;
+
+    keyboardRef.current = true;
+    publish({ zone: 'grid', list, day: dayIndex, slot: slotIndex, hand, focus: false });
+  }
+
+  function pointList(): void {
+    if (keyboardRef.current || !hand || board.ghost) return;
+
+    if (hand.kind === 'section' && !leftListRef.current) return;
+
+    if (zone === 'list' && board.hold.overList) return;
+
+    publish({ zone: 'list', list, day, slot, hand, focus: false });
+  }
+
+  function leaveList(): void {
+    if (hand && !board.ghost) leftListRef.current = true;
+  }
+
+  function dropAt(dayIndex: number, slotIndex: number): void {
+    if (!hand || board.ghost) return;
+
+    const dayId = input.days[dayIndex];
+    const slotId = input.slots[slotIndex];
+    if (!dayId || !slotId) return;
+
+    if (hand.kind === 'lesson' && !board.repeat && isOriginalSlot(input.lessons, hand.lessonId, dayId, slotId)) {
+      publish({ zone: 'grid', list, day: dayIndex, slot: slotIndex, hand: null, focus: true });
+
+      return;
+    }
+
+    board.dropHand(hand, { kind: 'slot', day: dayId, timeSlotId: slotId });
+  }
   return {
     listIndex: list,
     dayIndex: day,
     slotIndex: slot,
-    grabSection: (sectionId: string, index: number) => {
-      publish({
-        zone: 'grid',
-        list: index,
-        day,
-        slot,
-        hand: { kind: 'section', sectionId },
-        focus: true,
-      });
-    },
-    grabLesson: (lessonId: string, dayIndex: number, slotIndex: number) => {
-      publish({
-        zone: 'grid',
-        list,
-        day: dayIndex,
-        slot: slotIndex,
-        hand: { kind: 'lesson', lessonId },
-        focus: true,
-      });
-    },
-    enter: (next: Zone) => {
-      if (keepOffList(next)) return;
-
-      if (next === zone && armed) return;
-
-      publish({ zone: next, list, day, slot, hand, focus: false });
-    },
-    pointGrid: (dayIndex: number, slotIndex: number) => {
-      if (keys.current || !hand || board.ghost) return;
-
-      if (zone === 'grid' && day === dayIndex && slot === slotIndex) return;
-
-      publish({ zone: 'grid', list, day: dayIndex, slot: slotIndex, hand, focus: false });
-    },
-    focusGrid: (dayIndex: number, slotIndex: number) => {
-      if (alreadyAimed(dayIndex, slotIndex)) return;
-
-      keys.current = true;
-      publish({ zone: 'grid', list, day: dayIndex, slot: slotIndex, hand, focus: false });
-    },
-    pointList: () => {
-      if (keys.current || !hand || board.ghost) return;
-
-      if (hand.kind === 'section' && !leftList.current) return;
-
-      if (zone === 'list' && board.hold.overList) return;
-
-      publish({ zone: 'list', list, day, slot, hand, focus: false });
-    },
-    leaveList: () => {
-      if (hand && !board.ghost) leftList.current = true;
-    },
-    dropAt: (dayIndex: number, slotIndex: number) => {
-      if (!hand || board.ghost) return;
-
-      const dayId = input.days[dayIndex];
-      const slotId = input.slots[slotIndex];
-      if (!dayId || !slotId) return;
-
-      if (hand.kind === 'lesson' && !board.repeat && isHome(input.lessons, hand.lessonId, dayId, slotId)) {
-        publish({ zone: 'grid', list, day: dayIndex, slot: slotIndex, hand: null, focus: true });
-
-        return;
-      }
-
-      board.dropHand(hand, { kind: 'slot', day: dayId, timeSlotId: slotId });
-    },
+    grabSection,
+    grabLesson,
+    enter,
+    pointGrid,
+    focusGrid,
+    pointList,
+    leaveList,
+    dropAt,
   };
 }

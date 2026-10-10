@@ -1,6 +1,6 @@
 import type { WeekDay } from '#schedule/types.ts';
 
-import { sectionTeacher } from '#schedule/section-teacher.ts';
+import { sectionTeacher } from '#schedule/section.teacher.ts';
 import { useSchedule } from '#app/schedule.store.ts';
 import { explainSlot } from '#schedule/conflicts.ts';
 

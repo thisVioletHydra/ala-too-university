@@ -1,12 +1,19 @@
 import type { Lesson, Section } from '#schedule/types.ts';
-import type { ListMode } from '#schedule/section-selection.ts';
+import type { ListMode } from '#schedule/section.selection.ts';
 
-import { selectSections } from '#schedule/section-selection.ts';
+import { selectSections } from '#schedule/section.selection.ts';
 import { useMemo, useState } from 'react';
 
-export type { ListMode } from '#schedule/section-selection.ts';
+export type { ListMode } from '#schedule/section.selection.ts';
 
-export function useSearch(sections: Section[], lessons: Lesson[], courseName: (section: Section) => string, remembered: Record<string, string>) {
+type SearchInput = {
+  sections: Section[];
+  lessons: Lesson[];
+  courseName: (section: Section) => string;
+  remembered: Record<string, string>;
+};
+
+export function useSearch({ sections, lessons, courseName, remembered }: SearchInput) {
   const [groupBy, setGroupBy] = useState<'course' | 'teacher'>('course');
   const [sectionTeacherId, setSectionTeacherId] = useState('');
   const [query, setQuery] = useState('');
