@@ -2,7 +2,7 @@
  * Попадание точки в прямоугольник. Адаптер отдаёт голые числа из
  * `getBoundingClientRect()`, решение остаётся здесь — без DOM и React.
  */
-export type Bounds = {
+type Bounds = {
   left: number
   right: number
   top: number

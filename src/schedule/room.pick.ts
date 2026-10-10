@@ -2,7 +2,7 @@ import type { Lesson, Room, Section, WeekDay } from '#schedule/types.ts';
 
 import { busySlots, slotKey } from '#schedule/slots.busy.ts';
 
-export type PickRoomInput = {
+type PickRoomInput = {
   section: Section
   day: WeekDay
   timeSlotId: string

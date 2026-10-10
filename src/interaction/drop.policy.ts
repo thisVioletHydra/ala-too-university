@@ -1,7 +1,7 @@
 import type { Lesson } from '#schedule/types.ts';
 import type { Hand, DropTarget } from './types.ts';
 
-export type DropDecision =
+type DropDecision =
   | { kind: 'cancel' }
   | { kind: 'return-section'; sectionId: string }
   | { kind: 'remove'; lessonId: string }

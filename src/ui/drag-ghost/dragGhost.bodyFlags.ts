@@ -1,4 +1,4 @@
-export type CardInput = 'pointer' | 'keyboard';
+type CardInput = 'pointer' | 'keyboard';
 
 function setFlag(name: 'drag' | 'hand' | 'cardInput', value: string | null): void {
   if (value === null) delete document.body.dataset[name];

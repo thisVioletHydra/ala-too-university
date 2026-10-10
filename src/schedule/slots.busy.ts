@@ -1,6 +1,6 @@
 import type { Lesson, TeacherBlockedSlot, WeekDay } from '#schedule/types.ts';
 
-export type BusySlots = {
+type BusySlots = {
   teacherAt: Map<string, string>
   roomAt: Map<string, string>
   sectionAt: Map<string, string>

@@ -4,7 +4,7 @@ import type { ScheduleCatalog } from '#schedule/types.ts';
 import type { ReactNode, RefObject } from 'react';
 
 import { acceptsPointer } from '#accessible/input.pointer.ts';
-import { isInteractionKey } from '#accessible/keyboard.bindings.ts';
+import { subscribeInputMethod } from '#accessible/input.method.ts';
 import { cannotFly, firstSlotWidth, heldDrag, landingBox, placeAim, placeAt, sourceNode } from '#ui/drag-ghost/dragGhost.geometry.ts';
 import { heldCard } from '#ui/drag-ghost/dragGhost.heldCard.tsx';
 import { resolveCursorState, ownsAnimation } from '#interaction/cursor.state.ts';
@@ -14,7 +14,7 @@ import { useSchedule } from '#app/schedule.store.ts';
 import { useEffect, useEffectEvent, useLayoutEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 
-export type HandCursorState = {
+type HandCursorState = {
   node: RefObject<HTMLDivElement | null>
   content: ReactNode
 };
@@ -132,21 +132,20 @@ export function useHandCursor(catalog: ScheduleCatalog): HandCursorState {
       placeAt(el, event.clientX, event.clientY);
     }
 
-    function key(event: KeyboardEvent): void {
-      if (!isInteractionKey(event.key)) return;
+    const unsubscribeInput = subscribeInputMethod((method) => {
+      if (method !== 'keyboard') return;
 
       input.current = 'keyboard';
       setCardInput('keyboard');
       if (cursor.current.phase === 'holding') cursor.current = { phase: 'holding', input: 'keyboard' };
-    }
+    });
 
     window.addEventListener('pointermove', point);
     window.addEventListener('pointerdown', point);
-    window.addEventListener('keydown', key, true);
     return () => {
       window.removeEventListener('pointermove', point);
       window.removeEventListener('pointerdown', point);
-      window.removeEventListener('keydown', key, true);
+      unsubscribeInput();
     };
   }, []);
 

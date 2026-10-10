@@ -47,12 +47,12 @@ export function landingBox(landing: Landing): { left: number, top: number, width
   return tray instanceof HTMLElement ? plainBox(tray) : null;
 }
 
-export function plainBox(node: HTMLElement): { left: number, top: number, width: number } {
+function plainBox(node: HTMLElement): { left: number, top: number, width: number } {
   const rect = node.getBoundingClientRect();
   return { left: rect.left, top: rect.top, width: rect.width };
 }
 
-export function insetBox(node: HTMLElement): { left: number, top: number, width: number } {
+function insetBox(node: HTMLElement): { left: number, top: number, width: number } {
   const rect = node.getBoundingClientRect();
   const style = getComputedStyle(node);
   const padStart = Number.parseFloat(style.paddingInlineStart);
@@ -86,7 +86,7 @@ export function placeAim(element: HTMLElement): void {
   placeWithinViewport(element, rect.right - element.offsetWidth * 0.4, rect.bottom - 24);
 }
 
-export function placeWithinViewport(element: HTMLElement, left: number, top: number): void {
+function placeWithinViewport(element: HTMLElement, left: number, top: number): void {
   const x = Math.max(8, Math.min(left, window.innerWidth - element.offsetWidth - 8));
   const y = Math.max(8, Math.min(top, window.innerHeight - element.offsetHeight - 8));
   element.style.transform = `translate(${x}px, ${y}px)`;

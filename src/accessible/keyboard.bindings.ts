@@ -1,5 +1,5 @@
 export type InputMethod = 'pointer' | 'keyboard';
-export type Platform = 'mac' | 'windows' | 'other';
+type Platform = 'mac' | 'windows' | 'other';
 export type KeyStroke = {
   key: string;
   metaKey: boolean;
@@ -27,7 +27,7 @@ export const keyboard = {
   copyMode: ['Shift'],
 } as const;
 
-export type KeyAction = keyof typeof keyboard;
+type KeyAction = keyof typeof keyboard;
 
 export function matchesKey(action: KeyAction, key: string): boolean {
   return keyboard[action].some((candidate) => candidate === key);
@@ -51,9 +51,9 @@ export function detectPlatform(platform: string): Platform {
   return /Win/i.test(platform) ? 'windows' : 'other';
 }
 
-export const commandModifier = { mac: 'metaKey', windows: 'ctrlKey', other: 'ctrlKey' } as const;
+const commandModifier = { mac: 'metaKey', windows: 'ctrlKey', other: 'ctrlKey' } as const;
 
-export type GlobalCommand = 'undo' | 'redo' | 'focusSearch' | 'close';
+type GlobalCommand = 'undo' | 'redo' | 'focusSearch' | 'close';
 
 export function globalCommand(stroke: KeyStroke, platform: Platform): GlobalCommand | null {
   const primary = stroke[commandModifier[platform]];
@@ -69,7 +69,7 @@ export function globalCommand(stroke: KeyStroke, platform: Platform): GlobalComm
   return matchesKey('focusSearch', key) ? 'focusSearch' : null;
 }
 
-export type HintContext = 'settings' | 'picker' | 'editor' | 'holding' | 'navigation';
+type HintContext = 'settings' | 'picker' | 'editor' | 'holding' | 'navigation';
 export const keyboardHints: Record<HintContext, ReadonlyArray<readonly [string, string]>> = {
   settings: [['Tab', 'следующая настройка'], ['Пробел', 'переключить'], ['Esc', 'закрыть']],
   picker: [['↑ ↓', 'выбрать занятие'], ['Enter', 'править'], ['Пробел', 'взять'], ['Esc', 'вернуться в сетку']],

@@ -186,7 +186,7 @@ function LessonFace({ courseId, courseCode, courseName, code, teacherName, roomN
         <LessonFaceBody courseCode={courseCode} courseName={courseName} code={code} teacherName={teacherName} roomName={roomName} roomType={roomType} />
       </button>
       {canEdit && sourceId && <LessonEditButton lessonId={sourceId} code={code} />}
-      {actions && sourceId ? <SourcePlaceholder lessonId={sourceId} code={code} editOnly={sourceActions === 'edit'} /> : null}
+      {actions && sourceId && sourceActions !== 'edit' && <SourcePlaceholder lessonId={sourceId} code={code} />}
     </div>
   );
 }

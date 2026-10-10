@@ -88,8 +88,6 @@ export function useDndHandlers(deps: DndDeps) {
     if (!current || !isRecord(data)) return;
 
     if (data.kind === 'card-action' && current.kind === 'lesson' && data.lessonId === current.lessonId) {
-      if (data.action === 'edit') setEditor({ mode: 'edit', lessonId: current.lessonId });
-      else if (data.action === 'delete') useSchedule.getState().unassignLesson(current.lessonId);
 
       return;
     }

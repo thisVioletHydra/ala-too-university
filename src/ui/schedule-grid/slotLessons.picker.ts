@@ -11,7 +11,7 @@ import { matchesKey } from '#accessible/keyboard.bindings.ts';
 import { useBoard } from '#app/providers.tsx';
 import { useEffect, useRef, useState } from 'react';
 
-export type SlotPickerState = {
+type SlotPickerState = {
   open: boolean
   dialog: RefObject<HTMLDialogElement | null>
   selected: RefObject<string | null>
@@ -66,6 +66,8 @@ export function useSlotPicker({ items, root }: SlotPickerInput): SlotPickerState
   }, [board.hold.hand, board.ghost]);
 
   useEffect(() => {
+    if (returnToPicker.current.kind === 'none') return;
+
     function markAction(event: KeyboardEvent): void {
       if (returnToPicker.current.kind === 'none') return;
 

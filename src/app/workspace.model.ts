@@ -8,7 +8,6 @@ import { useSchedule } from '#app/schedule.store.ts';
 import { useScheduleAnnouncements } from '#features/schedule.announcements.ts';
 import { useHand } from '#features/use-hand.ts';
 import { useSearch } from '#features/use-search.ts';
-import { useUndo } from '#features/use-undo.ts';
 import { useCallback, useEffect, useState } from 'react';
 
 export function useWorkspace(catalog: ScheduleCatalog) {
@@ -17,7 +16,12 @@ export function useWorkspace(catalog: ScheduleCatalog) {
   const lessons = useSchedule((state) => state.lessons);
   const remembered = useSchedule((state) => state.rememberedTeachers);
   const board = useBoard();
-  const history = useUndo();
+  const history = {
+    undo: useSchedule((state) => state.undo),
+    redo: useSchedule((state) => state.redo),
+    canUndo: useSchedule((state) => state.past.length > 0),
+    canRedo: useSchedule((state) => state.future.length > 0),
+  };
   const courseName = useCallback((section: Section) => {
     return catalog.courses.find((course) => course.id === section.courseId)?.name ?? section.code;
   }, [catalog]);

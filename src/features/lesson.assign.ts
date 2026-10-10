@@ -4,7 +4,7 @@ import { sectionTeacher } from '#schedule/section.teacher.ts';
 import { useSchedule } from '#app/schedule.store.ts';
 import { explainSlot } from '#schedule/conflicts.ts';
 
-export type AssignOutcome =
+type AssignOutcome =
   | { type: 'placed' }
   | {
     type: 'edit'
@@ -14,7 +14,7 @@ export type AssignOutcome =
   }
   | { type: 'rejected', text: string };
 
-export type AssignRequest = {
+type AssignRequest = {
   sectionId: string
   teacherId?: string
   roomId?: string

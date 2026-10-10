@@ -1,6 +1,6 @@
 import { matchesKey } from './keyboard.bindings.ts';
 
-export const CONTROL_SELECTOR = 'button:not(:disabled), select:not(:disabled), input:not(:disabled), [tabindex="0"]';
+const CONTROL_SELECTOR = 'button:not(:disabled), select:not(:disabled), input:not(:disabled), [tabindex="0"]';
 
 export function focusableControls(root: HTMLElement): HTMLElement[] {
   return Array.from(root.querySelectorAll<HTMLElement>(CONTROL_SELECTOR)).filter((element) =>

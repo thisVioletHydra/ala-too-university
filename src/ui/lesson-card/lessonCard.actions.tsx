@@ -19,7 +19,6 @@ type SourcePlaceholderProps = {
   lessonId: string
   code: string
   strip?: boolean
-  editOnly?: boolean
 };
 
 const CANCEL_LABEL = 'Отменить перенос';
@@ -35,15 +34,13 @@ const ACTION_ICONS: Record<CardActionKind, ReactNode> = {
   cancel: null,
 };
 
-export function SourcePlaceholder({ lessonId, code, strip, editOnly }: SourcePlaceholderProps) {
-  if (editOnly) return null;
-
+export function SourcePlaceholder({ lessonId, code, strip }: SourcePlaceholderProps) {
   function handleContainerClick(event: MouseEvent<HTMLDivElement>): void {
     event.stopPropagation();
   }
 
   return (
-    <div className={styles.actions} data-strip={dataAttribute(strip)} data-edit-only={dataAttribute(editOnly)} onClick={handleContainerClick}>
+    <div className={styles.actions} data-strip={dataAttribute(strip)} onClick={handleContainerClick}>
       <CardAction lessonId={lessonId} action="cancel" label={strip ? code : SOURCE_PLACEHOLDER_LABEL} />
     </div>
   );

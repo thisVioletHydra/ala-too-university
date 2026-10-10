@@ -9,12 +9,12 @@ export function removeLesson(lessonId: string): void {
   useSchedule.getState().unassignLesson(lessonId);
 }
 
-export type SaveOutcome =
+type SaveOutcome =
   | { kind: 'saved' }
   | { kind: 'skipped' }
   | { kind: 'rejected', text: string };
 
-export type SaveInput = {
+type SaveInput = {
   draft: EditorDraft
   teacherId: string
   roomId: string

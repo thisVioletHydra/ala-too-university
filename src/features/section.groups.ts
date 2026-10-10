@@ -3,7 +3,7 @@ import type { Section } from '#schedule/types.ts';
 import { TEACHER_PLACEHOLDER } from '#ui/teacher-label.ts';
 
 export type Grouping = 'course' | 'teacher';
-export type SectionRow = {
+type SectionRow = {
   section: Section;
   index: number;
   first: boolean;

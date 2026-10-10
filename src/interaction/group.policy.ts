@@ -2,8 +2,8 @@ import type { Hand } from './types.ts';
 
 import { matchesAnyKey, matchesKey } from '#accessible/keyboard.bindings.ts';
 
-export type GroupView = 'single' | 'pair' | 'strips';
-export type GroupCommand = 'ignore' | 'open-picker' | 'focus-first' | 'reorder-up' | 'reorder-down' | 'confirm-order';
+type GroupView = 'single' | 'pair' | 'strips';
+type GroupCommand = 'ignore' | 'open-picker' | 'focus-first' | 'reorder-up' | 'reorder-down' | 'confirm-order';
 
 type GroupContext = {
   lessonIds: string[];
@@ -46,7 +46,7 @@ export function groupCommand(context: GroupContext): GroupCommand {
   return 'ignore';
 }
 
-export type PickerState = 'closed' | 'selecting' | 'suspended-for-editor';
+type PickerState = 'closed' | 'selecting' | 'suspended-for-editor';
 export function pickerState(open: boolean, editing: boolean): PickerState {
   if (!open) return 'closed';
 

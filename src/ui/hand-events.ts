@@ -1,5 +1,5 @@
 /** Событие «перенос отменён»: его слушает пикер занятий, чтобы вернуть выбор. */
-export const CANCEL_HAND_EVENT = 'schedule:cancel-hand';
+const CANCEL_HAND_EVENT = 'schedule:cancel-hand';
 
 export function requestCancelHand(): void {
   window.dispatchEvent(new Event(CANCEL_HAND_EVENT));

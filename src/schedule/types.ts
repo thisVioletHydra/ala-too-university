@@ -97,7 +97,7 @@ export type LessonMove = {
   timeSlotId: string
 };
 
-export type ConflictKind =
+type ConflictKind =
   | 'section-busy'
   | 'teacher-blocked'
   | 'teacher-busy'

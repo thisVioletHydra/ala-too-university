@@ -69,7 +69,6 @@ export function SectionCard(props: SectionCardProps) {
   return (
     <SectionFace
       {...props}
-      overlay={false}
       dragging={isDragging || held}
       dim={(tray && !mine) || Boolean(props.dimmed)}
       aimed={board.hold.aim === `list:${props.index}`}
@@ -81,23 +80,8 @@ export function SectionCard(props: SectionCardProps) {
   );
 }
 
-export function SectionPreview(props: SectionFields) {
-  return (
-    <SectionFace
-      {...props}
-      highlighted={false}
-      overlay
-      dragging={false}
-      dim={false}
-      aimed={false}
-      tabStop={false}
-    />
-  );
-}
-
 type SectionFaceProps = SectionFields & {
   highlighted: boolean
-  overlay: boolean
   dragging: boolean
   dim: boolean
   aimed: boolean
@@ -108,12 +92,12 @@ type SectionFaceProps = SectionFields & {
   onGrab?: () => void
 };
 
-function SectionFace({ showCourse, section, courseName, courseCode, teacherName, lessons, highlighted, overlay, dragging, dim, aimed, tabStop, nodeRef, listeners, attributes, onGrab }: SectionFaceProps) {
+function SectionFace({ showCourse, section, courseName, courseCode, teacherName, lessons, highlighted, dragging, dim, aimed, tabStop, nodeRef, listeners, attributes, onGrab }: SectionFaceProps) {
   const board = useBoard();
   const progress = sectionProgress(section, lessons);
   const needsTeacher = teacherName === null;
   const flashed = board.flash.sectionId === section.id;
-  const canEdit = !overlay && dragging;
+  const canEdit = dragging;
   const exceedsRequired = progress.placed > progress.required;
   const progressLabel = progressPhrase(progress.state, progress.placed, progress.required);
   const segmentCount = Math.max(progress.required, progress.placed);
@@ -136,7 +120,6 @@ function SectionFace({ showCourse, section, courseName, courseCode, teacherName,
       data-highlighted={dataAttribute(highlighted)}
       data-dragging={dataAttribute(dragging)}
       data-dim={dataAttribute(dim)}
-      data-overlay={dataAttribute(overlay)}
       data-aim={dataAttribute(aimed)}
       data-flash={dataAttribute(flashed)}
       data-section-id={section.id}

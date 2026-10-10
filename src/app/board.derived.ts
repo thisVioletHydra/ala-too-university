@@ -104,7 +104,7 @@ export function dragFace(
   };
 }
 
-export function courseCode(catalog: ScheduleCatalog, courseId: string): string {
+function courseCode(catalog: ScheduleCatalog, courseId: string): string {
   return catalog.courses.find((course) => course.id === courseId)?.code ?? '';
 }
 

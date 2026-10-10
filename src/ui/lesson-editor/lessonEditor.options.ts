@@ -3,14 +3,14 @@ import type { EditorDraft } from '#ui/lesson-editor/lessonEditor.draft.ts';
 
 import { explainSlot, placementConflict } from '#schedule/conflicts.ts';
 
-export type EditorOption = {
+type EditorOption = {
   value: string
   label: string
   disabled?: boolean
   detail?: string
 };
 
-export type EditorResult = { ok: true } | ConflictResult | null;
+type EditorResult = { ok: true } | ConflictResult | null;
 
 type FieldInput = {
   catalog: ScheduleCatalog

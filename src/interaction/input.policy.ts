@@ -1,4 +1,4 @@
-export type NavigationContext = {
+type NavigationContext = {
   composing: boolean;
   shiftPressed: boolean;
   sidebarHidden: boolean;

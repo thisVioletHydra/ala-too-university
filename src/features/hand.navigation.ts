@@ -4,8 +4,8 @@ import type { navigationPermissions } from '#interaction/input.policy.ts';
 import { navigateSidebar } from '#accessible/sidebar.focus.ts';
 import { hasOpenPopup, isInteractiveTarget } from '#accessible/keyboard.context.ts';
 import { matchesKey } from '#accessible/keyboard.bindings.ts';
-import { keyboardGrid } from '#accessible/keyboard.grid.ts';
-import { keyboardSlot } from '#accessible/keyboard.list.ts';
+import { keyboardGrid } from '#accessible/keyboard.navigation.ts';
+import { keyboardSlot } from '#accessible/keyboard.navigation.ts';
 
 type Permissions = ReturnType<typeof navigationPermissions>;
 

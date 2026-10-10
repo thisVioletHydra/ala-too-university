@@ -3,7 +3,7 @@ import type { LessonCardProps } from '#ui/lesson-card/lesson-card.tsx';
 
 import { groupView } from '#interaction/group.policy.ts';
 
-export type SlotLessonsView = {
+type SlotLessonsView = {
   multiple: boolean
   strips: boolean
   visible: LessonCardProps[]

@@ -1,4 +1,4 @@
-export type KeyboardZone = 'grid' | 'list';
+type KeyboardZone = 'grid' | 'list';
 
 export function targetZone(target: EventTarget | null): KeyboardZone | null {
   if (!(target instanceof Element)) return null;

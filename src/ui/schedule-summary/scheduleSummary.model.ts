@@ -7,7 +7,7 @@ export type SummaryInput = {
   lessons: Lesson[];
   board: Pick<ReturnType<typeof useBoard>, 'ghost' | 'hold' | 'repeat' | 'overKey' | 'overUnassign' | 'advice'>;
 };
-export type TransferSummary = {
+type TransferSummary = {
   code: string;
   title: string;
   detail: string;

@@ -47,13 +47,7 @@
     }
   }
 
-  &[data-overlay='yes'] {
-    border-color: var(--line-strong);
-    box-shadow: var(--lift);
-    cursor: grabbing;
-    rotate: -0.5deg;
-    scale: 1.02;
-  }
+
 
   &[data-flash='yes'] {
     animation: settle 620ms ease-out;
@@ -237,9 +231,9 @@
 }
 
 .card { padding: 0.65rem 0.75rem; box-shadow: none; gap: 0.4rem; }
-.card:not([data-overlay='yes']) .name { display: none; }
+.card .name { display: none; }
 .card .rail { display: none; }
-.card[data-state='done']:not([data-dim='yes']):not([data-overlay='yes']) { opacity: 0.6; }
+.card[data-state='done']:not([data-dim='yes']) { opacity: 0.6; }
 .meta { flex-direction: row-reverse; }
 .teacher { font-size: 0.88rem; color: var(--ink); font-weight: 550; }
 .chip { font-family: ui-monospace, monospace; background: transparent; border: 0; padding: 0; }
@@ -253,9 +247,9 @@
 .segments i[data-filled='yes'] { background: var(--ok); }
 .segments i[data-filled='yes'][data-extra='yes'] { background: var(--warn); }
 .card[data-excess='yes'] .phrase { color: var(--warn-ink); background: var(--warn-soft); padding: 0.2rem 0.45rem; border-radius: 6px; font-size: 0.7rem; }
-.card[data-excess='yes']:not([data-dim='yes']):not([data-overlay='yes']) { opacity: 1; }
+.card[data-excess='yes']:not([data-dim='yes']) { opacity: 1; }
 .excessCount { margin: 0; color: var(--muted); font-size: 0.7rem; text-align: right; }
-.card[data-state='done']:not([data-dim='yes']):not([data-overlay='yes']) { opacity: 0.8; }
+.card[data-state='done']:not([data-dim='yes']) { opacity: 0.8; }
 
 .card[data-dragging='yes'] { opacity: 1; border-style: dashed; border-color: var(--brand); background: var(--brand-soft); }
 .card[data-dragging='yes']::after { content: 'В руке'; position: absolute; inset-block-start: 0.2rem; inset-inline-end: 0.5rem; padding-inline: 0.25rem; border-radius: 4px; background: var(--brand-soft); font-size: 0.6rem; color: var(--brand-ink); pointer-events: none; }

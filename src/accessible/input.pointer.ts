@@ -2,7 +2,7 @@ import type { InputMethod } from './keyboard.bindings.ts';
 
 import { isPointerIntent } from './input.method.ts';
 
-export type PointerSample = {
+type PointerSample = {
   primary: boolean;
   eventType: string;
   x: number;

@@ -2,7 +2,7 @@ export type PickerReturn =
   | { kind: 'none' }
   | { kind: 'eligible'; lessonId: string };
 
-export type PickerReturnEvent =
+type PickerReturnEvent =
   | { kind: 'grab'; lessonId: string }
   | { kind: 'action' }
   | { kind: 'release' };

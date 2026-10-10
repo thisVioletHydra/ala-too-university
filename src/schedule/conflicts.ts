@@ -11,7 +11,7 @@ import type {
 import { busySlots, slotKey } from '#schedule/slots.busy.ts';
 import { pickRoom } from '#schedule/room.pick.ts';
 
-export type ConflictInput = {
+type ConflictInput = {
   placement: Placement
   lessons: Lesson[]
   sections: Section[]
@@ -28,7 +28,7 @@ export type SlotAdvice = {
   needsChoice: boolean
 };
 
-export type ExplainInput = {
+type ExplainInput = {
   section: Section
   day: WeekDay
   timeSlotId: string

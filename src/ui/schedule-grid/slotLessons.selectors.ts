@@ -1,5 +1,5 @@
 /** Селекторы клетки: держим их в одном месте, чтобы не растаскивать строки по файлам. */
-export const SLOT_SELECTOR = '[data-slot]';
+const SLOT_SELECTOR = '[data-slot]';
 
 export const LESSON_SELECTOR = '[data-lesson-id]';
 

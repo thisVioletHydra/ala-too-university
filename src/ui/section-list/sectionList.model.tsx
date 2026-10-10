@@ -3,12 +3,12 @@ import type { Grouping } from '#features/section.groups.ts';
 import type { ListMode } from '#features/use-search.ts';
 import type { Teacher } from '#schedule/types.ts';
 
-export type ModeTab = {
+type ModeTab = {
   id: ListMode
   label: string
 };
 
-export type SelectOption = {
+type SelectOption = {
   value: string
   label: string
 };
